@@ -571,19 +571,13 @@ function renderBars(elId,cats,color){
 }
 function renderPoster(p){
   $('fb-rev').textContent=mxn(p.rev);$('fb-tk').textContent=num(p.tickets);$('fb-cv').textContent=num(p.covers);$('fb-avg').textContent=mxn(p.avg);
-  var gAlim=[],gBeb=[],gEv=[],totAlim=0,totBeb=0,totEv=0;
-  (p.cats||[]).forEach(function(c){
-    var g=fbGroup(c.name);
-    if(g==='alim'){gAlim.push(c);totAlim+=c.rev;}
-    else if(g==='beb'){gBeb.push(c);totBeb+=c.rev;}
-    else if(g==='ev'){gEv.push(c);totEv+=c.rev;}
-  });
+  var pd=p.prods||{topAlim:[],topBeb:[],totAlim:0,totBeb:0,totEv:0};
   var tot=p.rev||1;
-  $('fb-alim').textContent=mxn(totAlim);$('fb-alim-pct').textContent=(totAlim/tot*100).toFixed(1)+'% of total';
-  $('fb-beb').textContent=mxn(totBeb);$('fb-beb-pct').textContent=(totBeb/tot*100).toFixed(1)+'% of total';
-  $('fb-ev').textContent=mxn(totEv);$('fb-ev-pct').textContent=(totEv/tot*100).toFixed(1)+'% of total';
-  renderBars('fb-bars-alim',gAlim,'var(--cact)');
-  renderBars('fb-bars-beb',gBeb,'var(--pac)');
+  $('fb-alim').textContent=mxn(pd.totAlim);$('fb-alim-pct').textContent=tot?(pd.totAlim/tot*100).toFixed(1)+'% of total':'';
+  $('fb-beb').textContent=mxn(pd.totBeb);$('fb-beb-pct').textContent=tot?(pd.totBeb/tot*100).toFixed(1)+'% of total':'';
+  $('fb-ev').textContent=mxn(pd.totEv);$('fb-ev-pct').textContent=tot?(pd.totEv/tot*100).toFixed(1)+'% of total':'';
+  renderBars('fb-bars-alim',pd.topAlim||[],'var(--cact)');
+  renderBars('fb-bars-beb',pd.topBeb||[],'var(--pac)');
 }
 
 function renderPerf(monthly,tRm,fbRev,wellRev,tOth){
@@ -729,15 +723,14 @@ function loadAll(){
   var now=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   $('hsub').textContent='Generated '+now;$('fts').textContent='Generated '+now;
   lt.textContent='Connecting to Google Sheets…';
-  var prodsUrl=CFG.SHEET1_PRODS&&CFG.SHEET1_PRODS.indexOf('YOUR_')<0?CFG.SHEET1_PRODS:null;
   Promise.all([
     fetchCSV(CFG.SHEET1_WEEKLY),fetchCSV(CFG.SHEET1_MONTHLY),fetchCSV(CFG.SHEET1_SALES),
-    fetchCSV(CFG.SHEET1_CATS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA)
+    fetchCSV(CFG.SHEET1_PRODS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA)
   ]).then(function(res){
     lt.textContent='Processing…';
     var wk=parseWeekly(res[0]);
     var monthly=parseMonthly(res[1]);
-    var poster=parseSales(res[2]);poster.prods=prodsUrl?parseProducts(res[3],CFG.WEEK_START):{topAlim:[],topBeb:[],totAlim:0,totBeb:0,totEv:0};
+    var poster=parseSales(res[2]);poster.prods=parseProducts(res[3],CFG.WEEK_START);
     var manual=parseManual(res[4]);
     var agenda=res[5].slice(1).filter(function(r){return r.length>15&&r[0];}).map(function(r){
       return{fecha:r[1],cat:r[5],svc:r[6],guest:r[4],status:r[11],price:cleanNum(r[15]),profit:cleanNum(r[20]),tip:cleanNum(r[14])};
