@@ -299,7 +299,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
       <div class="kpi bk"><div class="kl">Room Revenue</div><div class="kv sm" id="s-room">&#8212;</div></div>
       <div class="kpi bk"><div class="kl">F&amp;B</div><div class="kv sm" id="s-fb">&#8212;</div></div>
       <div class="kpi bk"><div class="kl">Wellness &amp; Activities</div><div class="kv sm" id="s-well">&#8212;</div></div>
-      <div class="kpi bk"><div class="kl">Other Revenue</div><div class="kv sm" id="s-oth">&#8212;</div></div>
+
       <div class="kpi" style="background:var(--ink);border:none"><div class="kl" style="color:var(--muted)">Grand Total</div><div class="kv sm" id="s-grand" style="color:var(--sand)">&#8212;</div></div>
     </div>
   </div>
@@ -566,7 +566,9 @@ function renderBars(elId,cats,color){
   var mx=cats[0]?cats[0].rev:1;
   var el=$(elId);if(!el)return;
   el.innerHTML=cats.length?cats.map(function(c){
-    return'<div class="bitem"><div class="bn">'+c.name+'</div><div class="btrack"><div class="bfill" style="width:'+(c.rev/mx*100).toFixed(1)+'%;background:'+color+'"></div></div><div class="brev">'+mxn(c.rev)+'</div><div class="bcnt">'+num(c.qty)+' pzs</div></div>';
+    var lbl=c.prod||c.name||'';
+    var sub=c.cat?' <span style="color:var(--muted);font-size:.6rem">· '+c.cat+'</span>':'';
+    return'<div class="bitem"><div class="bn">'+lbl+sub+'</div><div class="btrack"><div class="bfill" style="width:'+(c.rev/mx*100).toFixed(1)+'%;background:'+color+'"></div></div><div class="brev">'+mxn(c.rev)+'</div><div class="bcnt">'+num(c.qty)+' pzs</div></div>';
   }).join(''):'<div style="color:var(--muted);padding:12px;font-size:.8rem">No data</div>';
 }
 function renderPoster(p){
@@ -590,17 +592,17 @@ function renderPerf(monthly,tRm,fbRev,wellRev,tOth){
   $('mtd-yo').textContent=dTxt(c.yo);$('mtd-yr').textContent=dTxt(c.yr);
   var od=$('mtd-od');od.textContent=dTxt(c.yo)+' vs LY';od.className='kd '+dSign(c.yo);
   var rd=$('mtd-rd');rd.textContent=dTxt(c.yr)+' vs LY';rd.className='kd '+dSign(c.yr);
-  $('s-room').textContent=mxn(tRm);$('s-fb').textContent=mxn(fbRev);$('s-well').textContent=mxn(wellRev);$('s-oth').textContent=mxn(0);
-  $('s-grand').textContent=mxn(tRm+fbRev+wellRev+tOth);
+  $('s-room').textContent=mxn(tRm);$('s-fb').textContent=mxn(fbRev);$('s-well').textContent=mxn(wellRev);
+  $('s-grand').textContent=mxn(tRm+fbRev+wellRev);
 }
 
 function renderManual(m){
   // Drive link
-  var dl=m.driveLink;
+  var dl=m.driveLink||'https://drive.google.com/drive/folders/1R92b0ZrzC75287Q8H8f1S6pHypaOKBKg?usp=sharing';
   var dlw=$('drive-link-wrap'),dlb=$('drive-btn');
   if(dlw&&dlb){
-    if(dl){dlw.innerHTML='<span style="color:var(--pac)">\u25cf</span> <a href="'+dl+'" target="_blank" style="color:var(--pac);text-decoration:none">'+dl+'</a>';dlb.href=dl;dlb.style.display='inline-block';}
-    else{dlw.innerHTML='<em style="color:var(--muted)">No folder configured &mdash; add link in Manual Input sheet (row: Drive Link)</em>';dlb.style.display='none';}
+    if(dl){dlw.innerHTML='<span style="color:var(--pac)">●</span> <a href="'+dl+'" target="_blank" style="color:var(--pac);text-decoration:none;font-weight:400">Ver fotos e reseñas</a>';dlb.href=dl;dlb.style.display='inline-block';}
+    else{dlw.innerHTML='<em style="color:var(--muted)">No folder configured</em>';dlb.style.display='none';}
   }
   $('og').textContent=m.ota.g?(+m.ota.g).toFixed(1):'\u2014';$('ogst').textContent=m.ota.g?stars(+m.ota.g):'';$('ogc').textContent=m.ota.gC?m.ota.gC+' reviews':'';
   $('ob').textContent=m.ota.b?(+m.ota.b).toFixed(1):'\u2014';$('obc').textContent=m.ota.bC?m.ota.bC+' reviews':'';
