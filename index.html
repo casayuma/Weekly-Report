@@ -246,11 +246,18 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
     </div>
   </div>
   <div class="sec">
-    <div class="sh"><div class="st">Revenue by Group</div><div class="sr"></div></div>
-    <div class="krow" style="grid-template-columns:repeat(3,1fr)">
+    <div class="sh"><div class="st">Revenue F&amp;B</div><div class="sr"></div></div>
+    <div class="krow" style="grid-template-columns:repeat(2,1fr)">
       <div class="kpi ca"><div class="kl">Alimentos</div><div class="kv sm" id="fb-alim">&#8212;</div><div class="km" id="fb-alim-pct"></div></div>
       <div class="kpi ca"><div class="kl">Bebidas</div><div class="kv sm" id="fb-beb">&#8212;</div><div class="km" id="fb-beb-pct"></div></div>
-      <div class="kpi ca"><div class="kl">Eventos</div><div class="kv sm" id="fb-ev">&#8212;</div><div class="km" id="fb-ev-pct"></div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sh"><div class="st">Eventos</div><div class="sr"></div></div>
+    <div class="kpi ca" style="max-width:360px">
+      <div class="kl">Eventos Revenue</div>
+      <div class="kv sm" id="fb-ev">&#8212;</div>
+      <div class="km" id="fb-ev-pct"></div>
     </div>
   </div>
   <div class="sec">
@@ -353,7 +360,7 @@ var CFG={
   SHEET1_WEEKLY:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=1165161334&single=true&output=csv',
   SHEET1_MONTHLY:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=1221667623&single=true&output=csv',
   SHEET1_SALES:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=281557894&single=true&output=csv',
-  SHEET1_PRODS:'YOUR_SHEET1_PRODUCTS_CSV_URL',
+  SHEET1_PRODS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv', // Poster Productos
   SHEET1_CATS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv',
   SHEET1_MANUAL:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=78019589&single=true&output=csv',
   SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8PP8Sn3Fyrkx9RdplIgD7zqbe961KrH0z0xUemmyIXoFLTI1BYoxzt5mk_BTI-sgOOTRxIWzutG4B/pub?gid=0&single=true&output=csv',
@@ -670,14 +677,14 @@ function parseProducts(rows, ws_str){
   var we=new Date(ws_str+'T12:00:00');we.setDate(we.getDate()+6);
   var ws0=new Date(ws_str+'T12:00:00');
   var byProd={}, totAlim=0, totBeb=0, totEv=0;
-  for(var i=2;i<rows.length;i++){
+  for(var i=5;i<rows.length;i++){
     var r=rows[i];
     if(!r[1]||!/^\d{4}/.test(r[1]))continue;
     var d=new Date(r[1]+'T12:00:00');if(d<ws0||d>we)continue;
     var cat=(r[2]||'').trim(), prod=(r[3]||'').trim();
     if(SKIPCAT.has(cat)||!prod)continue;
     var g=fbGrp(cat);if(!g)continue;
-    var rev=cn(r[7]);if(rev<=0)continue;
+    var rev=cn(r[5]);if(rev<=0)continue; // col[5]=Ingresos in this sheet
     var qty=parseFloat((r[4]||'0').replace(/[^\d.]/g,''))||0;
     var key=g+'||'+cat+'||'+prod;
     if(!byProd[key])byProd[key]={g:g,cat:cat,prod:prod,rev:0,qty:0};
