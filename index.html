@@ -356,6 +356,12 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 </footer>
 
 <script>
+// Auto-calculate current week Monday-Sunday
+function getWeekStart(){var d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1);var m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;}
+function fmtWL(m){var s=new Date(m);s.setDate(s.getDate()+6);var o={month:'long',day:'numeric'};return m.toLocaleDateString('en-US',o)+' – '+s.toLocaleDateString('en-US',o)+', '+m.getFullYear();}
+function fmtNL(m){var nm=new Date(m);nm.setDate(nm.getDate()+7);var ne=new Date(nm);ne.setDate(ne.getDate()+6);var o={month:'long',day:'numeric'};return nm.toLocaleDateString('en-US',o)+' – '+ne.toLocaleDateString('en-US',o)+', '+nm.getFullYear();}
+function toISO(d){return d.toISOString().slice(0,10);}
+var _ws=getWeekStart();
 var CFG={
   SHEET1_WEEKLY:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=1165161334&single=true&output=csv',
   SHEET1_MONTHLY:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=1221667623&single=true&output=csv',
@@ -364,9 +370,9 @@ var CFG={
   SHEET1_CATS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv',
   SHEET1_MANUAL:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=78019589&single=true&output=csv',
   SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8PP8Sn3Fyrkx9RdplIgD7zqbe961KrH0z0xUemmyIXoFLTI1BYoxzt5mk_BTI-sgOOTRxIWzutG4B/pub?gid=0&single=true&output=csv',
-  WEEK_START:'2026-03-23',
-  WEEK_LABEL:'March 23 \u2013 29, 2026',
-  NEXT_LABEL:'March 30 \u2013 April 5, 2026'
+  WEEK_START: toISO(_ws),
+  WEEK_LABEL: fmtWL(_ws),
+  NEXT_LABEL: fmtNL(_ws)
 };
 var DEMO={
   weekly:[
@@ -641,9 +647,10 @@ function parseWeekly(rows){
     var d=new Date(r[1]+'T12:00:00');
     var rooms=cn(r[2])||1;
     var obj={date:r[1],day:DN[d.getDay()],occ:cn(r[7]),adr:rooms?cn(r[9])/rooms:0,revpar:cn(r[9])/25,roomRev:cn(r[9])};
-    var ws0s=new Date(CFG.WEEK_START+'T12:00:00'),we0s=new Date(ws0s);we0s.setDate(we0s.getDate()+6);if(d>=ws0s&&d<=we0s){
-      if(!past.find(function(x){return x.day===obj.day}))past.push(obj);
-    } else if(r[1]>CFG.WEEK_START&&!fc.find(function(x){return x.day===obj.day})){fc.push(obj);}
+    var _ws0=new Date(CFG.WEEK_START+'T12:00:00'),_we0=new Date(_ws0);_we0.setDate(_we0.getDate()+6);
+    var _wn0=new Date(_ws0);_wn0.setDate(_wn0.getDate()+7);
+    if(d>=_ws0&&d<=_we0){if(!past.find(function(x){return x.day===obj.day;}))past.push(obj);}
+    else if(d>=_wn0&&!fc.find(function(x){return x.day===obj.day;})){fc.push(obj);}
   }
   return{past:past,fc:fc};
 }
@@ -668,7 +675,26 @@ var CAT_BEB=new Set(['Cocktails','Cerveza','Soft Drinks','Blanco','Rosado','Tint
 var CAT_EV=new Set(['EVENTOS']);
 function fbGrp(cat){return CAT_ALIM.has(cat)?'alim':CAT_BEB.has(cat)?'beb':CAT_EV.has(cat)?'ev':null;}
 
-// Parse Poster Products export: col[1]=Fecha col[2]=Categoría col[3]=Producto col[4]=Cantidad col[7]=Ingresos
+// Poster Productos: col[1]=Fecha col[2]=Producto col[3]=Cantidad col[6]=Ingresos
+// No category column — infer group from product name keywords
+var SKIP_PROD=new Set(['TIPS RESTAURANT ORDEN 1','TIPS','FREE SOLO','Pantalla de Inicio','Incluido']);
+function skipProd(p){
+  for(var s of SKIP_PROD){if(p.toUpperCase().indexOf(s.toUpperCase())===0)return true;}
+  return false;
+}
+// Beverage keywords to detect drinks from product name
+var BEB_KW=['mezcal','margarita','cocktail','coctel','spritz','cerveza','modelo','victoria','corona',
+  'heineken','vino','wine','rosado','blanco','tinto','champagne','prosecco','cava','agua','mineral',
+  'natural 355','limonada','jamaica','horchata','tamarindo','michelada','mojito','gin','tequila',
+  'whisky','whisk','ron','vodka','licor','shot','copa','botella','botell','mezcalit','piña colada',
+  'daiquiri','negroni','aperol','espresso martini','moscow','pisco','sangria','sangría'];
+var EV_KW=['evento','event','catering','banquet','boda','wedding','montaje','palapa'];
+function inferGroup(prod){
+  var p=prod.toLowerCase();
+  for(var i=0;i<EV_KW.length;i++){if(p.indexOf(EV_KW[i])>=0)return'ev';}
+  for(var i=0;i<BEB_KW.length;i++){if(p.indexOf(BEB_KW[i])>=0)return'beb';}
+  return'alim'; // default to food
+}
 function parseProducts(rows, ws_str){
   var we=new Date(ws_str+'T12:00:00');we.setDate(we.getDate()+6);
   var ws0=new Date(ws_str+'T12:00:00');
@@ -677,13 +703,13 @@ function parseProducts(rows, ws_str){
     var r=rows[i];
     if(!r[1]||!/^\d{4}/.test(r[1]))continue;
     var d=new Date(r[1]+'T12:00:00');if(d<ws0||d>we)continue;
-    var cat=(r[2]||'').trim(), prod=(r[3]||'').trim();
-    if(SKIPCAT.has(cat)||!prod)continue;
-    var g=fbGrp(cat);if(!g)continue;
-    var rev=cn(r[5]);if(rev<=0)continue; // col[5]=Ingresos in this sheet
-    var qty=parseFloat((r[4]||'0').replace(/[^\d.]/g,''))||0;
-    var key=g+'||'+cat+'||'+prod;
-    if(!byProd[key])byProd[key]={g:g,cat:cat,prod:prod,rev:0,qty:0};
+    var prod=(r[2]||'').trim();
+    if(!prod||skipProd(prod))continue;
+    var rev=cn(r[6]);if(rev<=0)continue;
+    var qty=parseFloat((r[3]||'0').replace(/[^\d.]/g,''))||0;
+    var g=inferGroup(prod);
+    var key=g+'||'+prod;
+    if(!byProd[key])byProd[key]={g:g,prod:prod,rev:0,qty:0};
     byProd[key].rev+=rev;byProd[key].qty+=qty;
     if(g==='alim')totAlim+=rev;else if(g==='beb')totBeb+=rev;else if(g==='ev')totEv+=rev;
   }
