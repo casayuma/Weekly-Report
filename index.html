@@ -357,7 +357,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 
 <script>
 // Auto-calculate current week Monday-Sunday
-function getWeekStart(){var d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1);var m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;}
+function getWeekStart(){var d=new Date(),day=d.getDay(),diff=d.getDate()-(day===0?6:day-1)-7;var m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;}
 function fmtWL(m){var s=new Date(m);s.setDate(s.getDate()+6);var o={month:'long',day:'numeric'};return m.toLocaleDateString('en-US',o)+' – '+s.toLocaleDateString('en-US',o)+', '+m.getFullYear();}
 function fmtNL(m){var nm=new Date(m);nm.setDate(nm.getDate()+7);var ne=new Date(nm);ne.setDate(ne.getDate()+6);var o={month:'long',day:'numeric'};return nm.toLocaleDateString('en-US',o)+' – '+ne.toLocaleDateString('en-US',o)+', '+nm.getFullYear();}
 function toISO(d){return d.toISOString().slice(0,10);}
