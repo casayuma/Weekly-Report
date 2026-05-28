@@ -24,6 +24,20 @@
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-height:100svh}
 
+/* PASSWORD SCREEN */
+#pw-screen{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;transition:opacity .4s}
+#pw-screen.out{opacity:0;pointer-events:none}
+.pw-logo{font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.2rem);font-weight:300;color:var(--wool);letter-spacing:.22em;text-transform:uppercase;margin-bottom:4px}
+.pw-logo span{color:var(--sand)}
+.pw-sub{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:#555;font-weight:300;margin-bottom:36px;font-family:var(--sans)}
+.pw-box{display:flex;flex-direction:column;align-items:center;gap:12px;width:min(300px,90vw)}
+.pw-label{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-family:var(--sans);align-self:flex-start}
+.pw-input{width:100%;background:#16130f;border:1px solid #363230;border-radius:var(--r);color:var(--wool);font-family:var(--sans);font-size:.9rem;padding:12px 16px;outline:none;letter-spacing:.06em;transition:border-color .2s}
+.pw-input:focus{border-color:var(--sand)}
+.pw-btn{width:100%;background:var(--sand-dk);border:none;border-radius:var(--r);color:var(--ink);font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:12px;cursor:pointer;transition:opacity .2s}
+.pw-btn:hover{opacity:.85}
+.pw-err{font-size:.65rem;color:var(--neg);letter-spacing:.06em;font-family:var(--sans);min-height:16px;transition:opacity .2s}
+
 /* LOADING */
 #loading{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s}
 #loading.out{opacity:0;pointer-events:none}
@@ -142,6 +156,17 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 </style>
 </head>
 <body>
+
+<div id="pw-screen">
+  <div class="pw-logo">Casa <span>Yuma</span></div>
+  <div class="pw-sub">Weekly Report · Confidential</div>
+  <div class="pw-box">
+    <div class="pw-label">Enter password to continue</div>
+    <input class="pw-input" id="pw-input" type="password" placeholder="••••••••••••" autocomplete="off" />
+    <button class="pw-btn" id="pw-btn">Access Report</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
 
 <div id="loading">
   <div class="ll">CASA <span>YUMA</span></div>
@@ -267,6 +292,20 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
   <div class="sec">
     <div class="sh"><div class="st">Bebidas &middot; Top Categories</div><div class="sr"></div></div>
     <div class="bcard" id="fb-bars-beb"><div style="text-align:center;color:var(--muted);padding:20px;font-size:.8rem">Loading&hellip;</div></div>
+  </div>
+  <div class="sec">
+    <div class="sh"><div class="st">OpenTable &middot; Reservaciones</div><div class="sr"></div><div class="ss" id="ot-week-label">Esta semana</div></div>
+    <div class="krow" style="grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));margin-bottom:14px">
+      <div class="kpi ca"><div class="kl">Reservaciones</div><div class="kv" id="ot-total">&#8212;</div></div>
+      <div class="kpi ca"><div class="kl">Comensales</div><div class="kv" id="ot-covers">&#8212;</div></div>
+      <div class="kpi ca"><div class="kl">Red OpenTable</div><div class="kv" id="ot-network">&#8212;</div></div>
+      <div class="kpi ca"><div class="kl">Tu Red / Directas</div><div class="kv" id="ot-direct">&#8212;</div></div>
+    </div>
+    <div class="tcard tscroll"><table class="dt">
+      <thead><tr><th>Fecha</th><th>Hora</th><th>Comensal</th><th class="r">Tamaño</th><th>Fuente</th><th>Etiqueta</th></tr></thead>
+      <tbody id="ot-b"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Loading&hellip;</td></tr></tbody>
+      <tfoot id="ot-f"></tfoot>
+    </table></div>
   </div>
 </div></div>
 
@@ -769,6 +808,7 @@ function loadAll(){
     renderPoster(poster);
     renderPerf(monthly,occ.tRm,poster.rev,wRev,0);
     renderManual(manual);
+    renderOpenTable();
     dot.style.background='var(--pac)';dot.style.boxShadow='0 0 8px var(--pac)';
     ld.classList.add('out');
   }).catch(function(err){
@@ -776,13 +816,73 @@ function loadAll(){
     var ecc=renderOcc(DEMO.weekly,DEMO.forecast);
     var wRev=renderWellness(DEMO.agenda,CFG.WEEK_START);
     renderPoster(DEMO.poster);renderPerf(DEMO.monthly,ecc.tRm,DEMO.poster.rev,wRev,0);renderManual(DEMO.manual);
+    renderOpenTable();
     var e=$('err1');e.style.display='block';
     e.textContent='⚠️ Could not load live data ('+err.message+'). Showing demo data. Open via a web server (Netlify, GitHub Pages, or local server) — browsers block CSV fetching from local files.';
     dot.style.background='var(--sand-dk)';ld.classList.add('out');
   });
 }
 
-loadAll();
+// ── PASSWORD ──────────────────────────────────────────────────────────────
+var PW_CORRECT='WeYumaekly2026';
+function checkPassword(){
+  var val=document.getElementById('pw-input').value;
+  var err=document.getElementById('pw-err');
+  if(val===PW_CORRECT){
+    document.getElementById('pw-screen').classList.add('out');
+    setTimeout(function(){document.getElementById('pw-screen').style.display='none';},500);
+    err.textContent='';
+    loadAll();
+  } else {
+    err.textContent='Incorrect password. Please try again.';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var btn=document.getElementById('pw-btn');
+  var inp=document.getElementById('pw-input');
+  if(btn) btn.addEventListener('click',checkPassword);
+  if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPassword();});
+  inp.focus();
+});
+
+// ── OPENTABLE DATA ────────────────────────────────────────────────────────
+var OT_DATA = [
+  {fecha:'2026-05-25',hora:'19:30',nombre:'Elizabeth Sarni',size:2,fuente:'Red de OpenTable',etiqueta:''},
+  {fecha:'2026-05-23',hora:'17:00',nombre:'Ingrid de Jesús González',size:2,fuente:'Tu red',etiqueta:''},
+  {fecha:'2026-05-23',hora:'11:30',nombre:'Jaime Aguilera',size:2,fuente:'Red de OpenTable',etiqueta:'Noche de cita'},
+  {fecha:'2026-05-21',hora:'20:45',nombre:'Brenda Soto',size:6,fuente:'Red de OpenTable',etiqueta:'Cumpleaños'},
+  {fecha:'2026-05-21',hora:'20:15',nombre:'Lila Karina Cervantes',size:6,fuente:'Red de OpenTable',etiqueta:'Cumpleaños'},
+  {fecha:'2026-05-20',hora:'13:00',nombre:'Jacqueline Tupper',size:4,fuente:'Tu red',etiqueta:'Aniversario'}
+];
+
+function renderOpenTable(){
+  var rows = OT_DATA;
+  var totalRes = rows.length;
+  var totalCovers = rows.reduce(function(s,r){return s+r.size;},0);
+  var network = rows.filter(function(r){return r.fuente==='Red de OpenTable';}).length;
+  var direct = rows.filter(function(r){return r.fuente!=='Red de OpenTable';}).length;
+
+  document.getElementById('ot-total').textContent = totalRes;
+  document.getElementById('ot-covers').textContent = totalCovers;
+  document.getElementById('ot-network').textContent = network;
+  document.getElementById('ot-direct').textContent = direct;
+
+  var sorted = rows.slice().sort(function(a,b){return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:0;});
+  document.getElementById('ot-b').innerHTML = sorted.map(function(r){
+    var d=new Date(r.fecha+'T12:00:00');
+    var ds=d.toLocaleDateString('es-MX',{weekday:'short',month:'short',day:'numeric'});
+    var fBadge = r.fuente==='Red de OpenTable'
+      ? '<span style="background:var(--pac-lt);color:var(--pac-dk);border-radius:3px;padding:2px 7px;font-size:.6rem;font-weight:500;letter-spacing:.04em">OpenTable</span>'
+      : '<span style="background:var(--sand-lt);color:var(--sand-dk);border-radius:3px;padding:2px 7px;font-size:.6rem;font-weight:500;letter-spacing:.04em">Directa</span>';
+    var etq = r.etiqueta ? '<span style="background:var(--car-lt);color:var(--car);border-radius:3px;padding:2px 7px;font-size:.6rem">'+r.etiqueta+'</span>' : '<span style="color:var(--muted)">—</span>';
+    return '<tr><td class="sm">'+ds+'</td><td class="sm">'+r.hora+'</td><td class="bold">'+r.nombre+'</td><td class="r bold">'+r.size+'</td><td>'+fBadge+'</td><td>'+etq+'</td></tr>';
+  }).join('');
+  document.getElementById('ot-f').innerHTML='<tr><td colspan="3">TOTAL · '+totalRes+' reservaciones</td><td class="r bold">'+totalCovers+' comensales</td><td colspan="2"></td></tr>';
+}
+
+// loadAll() is triggered by password check above
 </script>
 </body>
 </html>
