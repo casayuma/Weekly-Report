@@ -408,12 +408,18 @@ var CFG={
   SHEET1_PRODS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv', // Poster Productos
   SHEET1_CATS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv',
   SHEET1_MANUAL:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=78019589&single=true&output=csv',
+  SHEET1_OPENTABLE:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE8OsLlvNf3EHw6ObE1lrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=200414384&single=true&output=csv',
   SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8PP8Sn3Fyrkx9RdplIgD7zqbe961KrH0z0xUemmyIXoFLTI1BYoxzt5mk_BTI-sgOOTRxIWzutG4B/pub?gid=0&single=true&output=csv',
   WEEK_START: toISO(_ws),
   WEEK_LABEL: fmtWL(_ws),
   NEXT_LABEL: fmtNL(_ws)
 };
 var DEMO={
+  opentable:[
+    {fecha:'2026-06-25',hora:'19:30',nombre:'Elizabeth Sarni',size:2,fuente:'Red de OpenTable',etiqueta:''},
+    {fecha:'2026-06-23',hora:'17:00',nombre:'Ingrid de Jesús González',size:2,fuente:'Tu red',etiqueta:''},
+    {fecha:'2026-06-21',hora:'20:45',nombre:'Brenda Soto',size:6,fuente:'Red de OpenTable',etiqueta:'Cumpleaños'}
+  ],
   weekly:[
     {date:'2026-03-23',day:'Monday',occ:100,adr:4937,revpar:4937,roomRev:123433},
     {date:'2026-03-24',day:'Tuesday',occ:92,adr:4879,revpar:4488,roomRev:112208},
@@ -844,7 +850,8 @@ function loadAll(){
   lt.textContent='Connecting to Google Sheets…';
   Promise.all([
     fetchCSV(CFG.SHEET1_WEEKLY),fetchCSV(CFG.SHEET1_MONTHLY),fetchCSV(CFG.SHEET1_SALES),
-    fetchCSV(CFG.SHEET1_PRODS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA)
+    fetchCSV(CFG.SHEET1_PRODS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA),
+    fetchCSV(CFG.SHEET1_OPENTABLE)
   ]).then(function(res){
     lt.textContent='Processing…';
     var wk=parseWeekly(res[0]);
@@ -852,13 +859,14 @@ function loadAll(){
     var poster=parseSales(res[2]);poster.prods=parseProducts(res[3],CFG.WEEK_START);
     var manual=parseManual(res[4]);
     var agenda=parseAgendaSheet(res[5]);
+    var opentable=parseOpenTableSheet(res[6],CFG.WEEK_START);
     lt.textContent='Rendering…';
     var occ=renderOcc(wk.past,wk.fc);
     var wRev=renderWellness(agenda,CFG.WEEK_START);
     renderPoster(poster);
     renderPerf(monthly,occ.tRm,poster.rev,wRev,0);
     renderManual(manual);
-    renderOpenTable();
+    renderOpenTable(opentable);
     dot.style.background='var(--pac)';dot.style.boxShadow='0 0 8px var(--pac)';
     ld.classList.add('out');
   }).catch(function(err){
@@ -866,7 +874,7 @@ function loadAll(){
     var ecc=renderOcc(DEMO.weekly,DEMO.forecast);
     var wRev=renderWellness(DEMO.agenda,CFG.WEEK_START);
     renderPoster(DEMO.poster);renderPerf(DEMO.monthly,ecc.tRm,DEMO.poster.rev,wRev,0);renderManual(DEMO.manual);
-    renderOpenTable();
+    renderOpenTable(DEMO.opentable);
     var e=$('err1');e.style.display='block';
     e.textContent='⚠️ Could not load live data ('+err.message+'). Showing demo data. Open via a web server (Netlify, GitHub Pages, or local server) — browsers block CSV fetching from local files.';
     dot.style.background='var(--sand-dk)';ld.classList.add('out');
@@ -897,22 +905,51 @@ document.addEventListener('DOMContentLoaded',function(){
   inp.focus();
 });
 
-// ── OPENTABLE DATA ────────────────────────────────────────────────────────
-var OT_DATA = [
-  {fecha:'2026-05-25',hora:'19:30',nombre:'Elizabeth Sarni',size:2,fuente:'Red de OpenTable',etiqueta:''},
-  {fecha:'2026-05-23',hora:'17:00',nombre:'Ingrid de Jesús González',size:2,fuente:'Tu red',etiqueta:''},
-  {fecha:'2026-05-23',hora:'11:30',nombre:'Jaime Aguilera',size:2,fuente:'Red de OpenTable',etiqueta:'Noche de cita'},
-  {fecha:'2026-05-21',hora:'20:45',nombre:'Brenda Soto',size:6,fuente:'Red de OpenTable',etiqueta:'Cumpleaños'},
-  {fecha:'2026-05-21',hora:'20:15',nombre:'Lila Karina Cervantes',size:6,fuente:'Red de OpenTable',etiqueta:'Cumpleaños'},
-  {fecha:'2026-05-20',hora:'13:00',nombre:'Jacqueline Tupper',size:4,fuente:'Tu red',etiqueta:'Aniversario'}
-];
+// ── OPENTABLE PARSER ──────────────────────────────────────────────────────
+function parseOTDate(s){
+  if(!s)return null;s=(s+'').trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return new Date(s.slice(0,10)+'T12:00:00');
+  var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1],12,0,0);
+  return null;
+}
+function parseOpenTableSheet(rows,ws_str){
+  if(!rows||!rows.length)return[];
+  var map=buildColMap(rows[0]);
+  var cFecha=findCol(map,['fecha la de visita','fecha de visita','fecha']),
+      cHora=findCol(map,['hora la de visita','hora de visita','hora']),
+      cNombre=findCol(map,['nombre del comensal','nombre']),
+      cTamano=findCol(map,['tamaño','tamano']),
+      cFuente=findCol(map,['fuente']),
+      cEstado=findCol(map,['estado']),
+      cEtq=findCol(map,['etiquetas de la reserva','etiquetas de reserva','etiquetas']);
+  var ws0=new Date(ws_str+'T12:00:00');var we=new Date(ws0);we.setDate(we.getDate()+6);
+  var out=[];
+  for(var i=1;i<rows.length;i++){
+    var r=rows[i];if(!r||r.length<3)continue;
+    var fechaRaw=cFecha>=0?(r[cFecha]||'').trim():'';
+    if(!fechaRaw)continue;
+    var d=parseOTDate(fechaRaw);if(!d||d<ws0||d>we)continue;
+    var nombre=cNombre>=0?(r[cNombre]||'').trim():'';
+    if(!nombre)continue;
+    out.push({
+      fecha:d.toISOString().slice(0,10),
+      hora:cHora>=0?(r[cHora]||'').trim():'',
+      nombre:nombre,
+      size:cTamano>=0?(parseInt(r[cTamano])||0):0,
+      fuente:cFuente>=0?(r[cFuente]||'').trim():'',
+      etiqueta:cEtq>=0?(r[cEtq]||'').trim():''
+    });
+  }
+  return out;
+}
 
-function renderOpenTable(){
-  var rows = OT_DATA;
+function renderOpenTable(rows){
+  rows = rows||[];
   var totalRes = rows.length;
   var totalCovers = rows.reduce(function(s,r){return s+r.size;},0);
-  var network = rows.filter(function(r){return r.fuente==='Red de OpenTable';}).length;
-  var direct = rows.filter(function(r){return r.fuente!=='Red de OpenTable';}).length;
+  var network = rows.filter(function(r){return r.fuente.indexOf('OpenTable')>=0;}).length;
+  var direct = totalRes-network;
 
   document.getElementById('ot-total').textContent = totalRes;
   document.getElementById('ot-covers').textContent = totalCovers;
@@ -920,15 +957,15 @@ function renderOpenTable(){
   document.getElementById('ot-direct').textContent = direct;
 
   var sorted = rows.slice().sort(function(a,b){return a.fecha<b.fecha?1:a.fecha>b.fecha?-1:0;});
-  document.getElementById('ot-b').innerHTML = sorted.map(function(r){
+  document.getElementById('ot-b').innerHTML = sorted.length?sorted.map(function(r){
     var d=new Date(r.fecha+'T12:00:00');
     var ds=d.toLocaleDateString('es-MX',{weekday:'short',month:'short',day:'numeric'});
-    var fBadge = r.fuente==='Red de OpenTable'
+    var fBadge = r.fuente.indexOf('OpenTable')>=0
       ? '<span style="background:var(--pac-lt);color:var(--pac-dk);border-radius:3px;padding:2px 7px;font-size:.6rem;font-weight:500;letter-spacing:.04em">OpenTable</span>'
-      : '<span style="background:var(--sand-lt);color:var(--sand-dk);border-radius:3px;padding:2px 7px;font-size:.6rem;font-weight:500;letter-spacing:.04em">Directa</span>';
+      : '<span style="background:var(--sand-lt);color:var(--sand-dk);border-radius:3px;padding:2px 7px;font-size:.6rem;font-weight:500;letter-spacing:.04em">'+(r.fuente||'Directa')+'</span>';
     var etq = r.etiqueta ? '<span style="background:var(--car-lt);color:var(--car);border-radius:3px;padding:2px 7px;font-size:.6rem">'+r.etiqueta+'</span>' : '<span style="color:var(--muted)">—</span>';
     return '<tr><td class="sm">'+ds+'</td><td class="sm">'+r.hora+'</td><td class="bold">'+r.nombre+'</td><td class="r bold">'+r.size+'</td><td>'+fBadge+'</td><td>'+etq+'</td></tr>';
-  }).join('');
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No reservations this week</td></tr>';
   document.getElementById('ot-f').innerHTML='<tr><td colspan="3">TOTAL · '+totalRes+' reservaciones</td><td class="r bold">'+totalCovers+' comensales</td><td colspan="2"></td></tr>';
 }
 
