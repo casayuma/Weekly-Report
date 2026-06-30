@@ -510,8 +510,18 @@ function dSign(v){if(isNaN(+v))return'neu';return+v>=0?'pos':'neg'}
 function dTxt(v){if(isNaN(+v))return'\u2014';var s=+v>=0?'+':'';return s+pct1(+v)}
 function stars(r){var f=Math.floor(+r),h=(+r-f)>=.5?1:0;return'\u2605'.repeat(f)+(h?'\u00bd':'')+'\u2606'.repeat(5-f-h)}
 function probCls(p){var n=parseInt(p);return n>=75?'ph':n>=50?'pm':'pl'}
-var CC={Masaje:'var(--pac)',Taxis:'var(--sand-dk)',Cabalgatas:'var(--car)',Boutique:'var(--cact)',Wellness:'var(--cact)',Surf:'var(--pac)',Otros:'var(--muted)'};
+var CC={Masaje:'var(--pac)',Taxis:'var(--sand-dk)',Tours:'var(--car)',Cabalgatas:'var(--car)',Boutique:'var(--cact)',Wellness:'var(--cact)',Surf:'var(--pac)',Otros:'var(--muted)'};
 function catC(c){return CC[c]||'var(--muted)'}
+function inferCategoria(svc){
+  var s=(svc||'').toLowerCase();
+  if(s.indexOf('taxi')>=0)return'Taxis';
+  if(s.indexOf('cabalgat')>=0)return'Cabalgatas';
+  if(s.indexOf('tour')>=0||s.indexOf('delfin')>=0||s.indexOf('tortuga')>=0)return'Tours';
+  if(s.indexOf('surf')>=0)return'Surf';
+  if(s.indexOf('yoga')>=0||s.indexOf('breathwork')>=0||s.indexOf('ice bath')>=0)return'Wellness';
+  if(s.indexOf('masaje')>=0||s.indexOf('relajante')>=0||s.indexOf('deep tissue')>=0||s.indexOf('drenaje')>=0||s.indexOf('facial')>=0||s.indexOf('liberacion')>=0)return'Masaje';
+  return'Otros';
+}
 // Spanish month names for date parsing
 var MES={'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11};
 function parseSpDate(ds){
@@ -565,6 +575,48 @@ function renderOcc(data,fc){
 }
 
 var VALID_STATUS=new Set(['CobradoCB','CargadoCB']);
+function findHeaderRow(rows){
+  for(var i=0;i<Math.min(rows.length,15);i++){
+    var joined=rows[i].join('|').toLowerCase();
+    if(joined.indexOf('fecha')>=0&&joined.indexOf('producto')>=0)return i;
+  }
+  return -1;
+}
+function buildColMap(headerRow){
+  var map={};
+  headerRow.forEach(function(h,i){var k=(h||'').trim().toLowerCase();if(k&&map[k]==null)map[k]=i;});
+  return map;
+}
+function findCol(map,names){for(var i=0;i<names.length;i++){if(map[names[i]]!=null)return map[names[i]];}return -1;}
+function parseAgendaSheet(rows){
+  var hIdx=findHeaderRow(rows);
+  if(hIdx<0)return[];
+  var map=buildColMap(rows[hIdx]);
+  var cFecha=findCol(map,['fecha']),cHuesped=findCol(map,['huesped','huésped']),
+      cProd=findCol(map,['producto/servicio','producto / servicio','producto']),
+      cStatus=findCol(map,['status']),cPrecio=findCol(map,['precio']),
+      cPropina=findCol(map,['propina']),cGanancia=findCol(map,['ganancia real','ganancia']);
+  var out=[],lastFecha='';
+  for(var i=hIdx+1;i<rows.length;i++){
+    var r=rows[i];if(!r||r.length<3)continue;
+    var fechaRaw=cFecha>=0?(r[cFecha]||'').trim():'';
+    if(fechaRaw)lastFecha=fechaRaw;
+    if(!lastFecha)continue;
+    var prod=cProd>=0?(r[cProd]||'').trim():'';
+    if(!prod)continue;
+    out.push({
+      fecha:lastFecha,
+      cat:inferCategoria(prod),
+      svc:prod,
+      guest:cHuesped>=0?(r[cHuesped]||'').trim():'',
+      status:cStatus>=0?(r[cStatus]||'').trim():'',
+      price:cPrecio>=0?cleanNum(r[cPrecio]):0,
+      profit:cGanancia>=0?cleanNum(r[cGanancia]):0,
+      tip:cPropina>=0?cleanNum(r[cPropina]):0
+    });
+  }
+  return out;
+}
 function renderWellness(rows,ws){
   var week=rows.filter(function(r){return inWeek(r.fecha||r.Fecha,ws)&&VALID_STATUS.has(r.status||r.Status||'');});
   var tRev=0,tPro=0,cnt=0;
@@ -799,9 +851,7 @@ function loadAll(){
     var monthly=parseMonthly(res[1]);
     var poster=parseSales(res[2]);poster.prods=parseProducts(res[3],CFG.WEEK_START);
     var manual=parseManual(res[4]);
-    var agenda=res[5].slice(1).filter(function(r){return r.length>15&&r[0];}).map(function(r){
-      return{fecha:r[1],cat:r[5],svc:r[6],guest:r[4],status:r[11],price:cleanNum(r[15]),profit:cleanNum(r[20]),tip:cleanNum(r[14])};
-    });
+    var agenda=parseAgendaSheet(res[5]);
     lt.textContent='Rendering…';
     var occ=renderOcc(wk.past,wk.fc);
     var wRev=renderWellness(agenda,CFG.WEEK_START);
