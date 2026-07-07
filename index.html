@@ -408,7 +408,7 @@ var CFG={
   SHEET1_PRODS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv', // Poster Productos
   SHEET1_CATS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv',
   SHEET1_MANUAL:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=78019589&single=true&output=csv',
-  SHEET1_OPENTABLE:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE8OsLlvNf3EHw6ObE1lrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=200414384&single=true&output=csv',
+  SHEET1_OPENTABLE:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=200414384&single=true&output=csv',
   SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8PP8Sn3Fyrkx9RdplIgD7zqbe961KrH0z0xUemmyIXoFLTI1BYoxzt5mk_BTI-sgOOTRxIWzutG4B/pub?gid=0&single=true&output=csv',
   WEEK_START: toISO(_ws),
   WEEK_LABEL: fmtWL(_ws),
@@ -851,7 +851,7 @@ function loadAll(){
   Promise.all([
     fetchCSV(CFG.SHEET1_WEEKLY),fetchCSV(CFG.SHEET1_MONTHLY),fetchCSV(CFG.SHEET1_SALES),
     fetchCSV(CFG.SHEET1_PRODS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA),
-    fetchCSV(CFG.SHEET1_OPENTABLE)
+    fetchCSV(CFG.SHEET1_OPENTABLE).catch(function(){return[];})
   ]).then(function(res){
     lt.textContent='Processing…';
     var wk=parseWeekly(res[0]);
