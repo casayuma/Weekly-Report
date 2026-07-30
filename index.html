@@ -520,12 +520,14 @@ var CC={Masaje:'var(--pac)',Taxis:'var(--sand-dk)',Tours:'var(--car)',Cabalgatas
 function catC(c){return CC[c]||'var(--muted)'}
 function inferCategoria(svc){
   var s=(svc||'').toLowerCase();
-  if(s.indexOf('taxi')>=0)return'Taxis';
+  if(s.indexOf('taxi')>=0||s.indexOf('sedan')>=0||s.indexOf('tour delfin')>=0&&s.indexOf('taxi')>=0)return'Taxis';
+  if(s.indexOf('sedan')>=0||s.indexOf('playa yuma')>=0&&s.indexOf('taxi')>=0)return'Taxis';
+  if(s.indexOf('renta scooter')>=0||s.indexOf('total taxi')>=0)return'Taxis';
   if(s.indexOf('cabalgat')>=0)return'Cabalgatas';
-  if(s.indexOf('tour')>=0||s.indexOf('delfin')>=0||s.indexOf('tortuga')>=0)return'Tours';
+  if(s.indexOf('tour')>=0||s.indexOf('delfin')>=0||s.indexOf('tortuga')>=0||s.indexOf('liberacion')>=0)return'Tours';
   if(s.indexOf('surf')>=0)return'Surf';
   if(s.indexOf('yoga')>=0||s.indexOf('breathwork')>=0||s.indexOf('ice bath')>=0)return'Wellness';
-  if(s.indexOf('masaje')>=0||s.indexOf('relajante')>=0||s.indexOf('deep tissue')>=0||s.indexOf('drenaje')>=0||s.indexOf('facial')>=0||s.indexOf('liberacion')>=0)return'Masaje';
+  if(s.indexOf('masaje')>=0||s.indexOf('relajante')>=0||s.indexOf('deep tissue')>=0||s.indexOf('drenaje')>=0||s.indexOf('facial')>=0||s.indexOf('zapoteco')>=0||s.indexOf('piedras')>=0)return'Masaje';
   return'Otros';
 }
 // Spanish month names for date parsing
@@ -598,10 +600,17 @@ function parseAgendaSheet(rows){
   var hIdx=findHeaderRow(rows);
   if(hIdx<0)return[];
   var map=buildColMap(rows[hIdx]);
-  var cFecha=findCol(map,['fecha']),cHuesped=findCol(map,['huesped','huésped']),
+  var cFecha=findCol(map,['fecha']),
+      cHuesped=findCol(map,['huesped','huésped']),
+      cCat=findCol(map,['categoria','categoría']),
       cProd=findCol(map,['producto/servicio','producto / servicio','producto']),
-      cStatus=findCol(map,['status']),cPrecio=findCol(map,['precio']),
-      cPropina=findCol(map,['propina']),cGanancia=findCol(map,['ganancia real','ganancia']);
+      cStatus=findCol(map,['status']),
+      cPrecio=findCol(map,['precio']),
+      cPropina=findCol(map,['propina']),
+      cCosto=findCol(map,['costo proveedor','costo']),
+      cComF=findCol(map,['com front valor','com front']),
+      cComT=findCol(map,['com ter valor','com ter']),
+      cGanancia=findCol(map,['ganancia real','ganancia']);
   var out=[],lastFecha='';
   for(var i=hIdx+1;i<rows.length;i++){
     var r=rows[i];if(!r||r.length<3)continue;
@@ -610,14 +619,27 @@ function parseAgendaSheet(rows){
     if(!lastFecha)continue;
     var prod=cProd>=0?(r[cProd]||'').trim():'';
     if(!prod)continue;
+    // Prefer sheet's own Categoria column; infer only if blank
+    var catRaw=cCat>=0?(r[cCat]||'').trim():'';
+    var cat=catRaw||inferCategoria(prod);
+    var precio=cPrecio>=0?cleanNum(r[cPrecio]):0;
+    var ganancia=cGanancia>=0?cleanNum(r[cGanancia]):0;
+    var costo=cCosto>=0?cleanNum(r[cCosto]):0;
+    var comF=cComF>=0?cleanNum(r[cComF]):0;
+    var comT=cComT>=0?cleanNum(r[cComT]):0;
+    // Compute profit if Ganancia Real is missing/zero but costs are available
+    if(!ganancia&&precio>0){
+      var computed=precio-costo-comF-comT;
+      if(computed>0)ganancia=computed;
+    }
     out.push({
       fecha:lastFecha,
-      cat:inferCategoria(prod),
+      cat:cat,
       svc:prod,
       guest:cHuesped>=0?(r[cHuesped]||'').trim():'',
       status:cStatus>=0?(r[cStatus]||'').trim():'',
-      price:cPrecio>=0?cleanNum(r[cPrecio]):0,
-      profit:cGanancia>=0?cleanNum(r[cGanancia]):0,
+      price:precio,
+      profit:ganancia,
       tip:cPropina>=0?cleanNum(r[cPropina]):0
     });
   }
