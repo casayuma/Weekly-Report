@@ -126,6 +126,22 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 @media(max-width:520px){.bitem{grid-template-columns:80px 1fr 75px}.bcnt{display:none}}
 
 /* OTA */
+.fsel{background:var(--white);border:1px solid var(--wool-dk);border-radius:var(--r);color:var(--ink);font-family:var(--sans);font-size:.72rem;padding:6px 10px;outline:none;cursor:pointer}
+.com-card{background:var(--white);border:1px solid var(--wool-dk);border-radius:var(--r-lg);padding:16px 20px;box-shadow:var(--sh)}
+.com-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.com-guest{font-family:var(--serif);font-size:.95rem;color:var(--ink);font-weight:400}
+.com-meta{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px;font-family:var(--sans)}
+.com-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.com-score-badge{font-family:var(--serif);font-size:1rem;font-weight:500;min-width:28px;text-align:right}
+.com-sent{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;padding:3px 8px;font-family:var(--sans);font-weight:500}
+.com-sent.pos{background:var(--pac-lt);color:var(--pac-dk)}
+.com-sent.neg{background:#fce8e8;color:#c0392b}
+.com-sent.neu{background:var(--sand-lt);color:var(--sand-dk)}
+.com-sent.sin{background:var(--wool);color:var(--muted)}
+.com-area-tag{font-size:.58rem;letter-spacing:.08em;border-radius:3px;padding:3px 8px;background:var(--wool);color:var(--ink2);font-family:var(--sans)}
+.com-text{font-size:.82rem;color:var(--ink);line-height:1.55;font-style:italic}
+.com-collab{font-size:.65rem;color:var(--sand-dk);margin-top:6px;font-family:var(--sans)}
+.com-empty{text-align:center;color:var(--muted);padding:28px;font-size:.8rem;font-family:var(--sans)}
 .ogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:640px){.ogrid{grid-template-columns:1fr}}
 .ocard{background:var(--white);border-radius:var(--r-lg);padding:20px 22px 18px;box-shadow:var(--sh);border:1px solid var(--wool-dk)}
@@ -355,13 +371,55 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
     </div>
   </div>
   <div class="sec">
-    <div class="sh"><div class="st">Guest Photos &amp; Reviews</div><div class="sr"></div></div>
-    <div style="background:var(--white);border-radius:var(--r-lg);border:1px solid var(--wool-dk);padding:20px 22px;box-shadow:var(--sh);display:flex;align-items:center;gap:16px">
-      <div style="flex:1">
-        <div style="font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Google Drive Folder</div>
-        <div id="drive-link-wrap" style="font-size:.8rem;color:var(--ink2)"><em style="color:var(--muted)">No folder configured &mdash; add link in Manual Input sheet</em></div>
+    <div class="sh">
+      <div class="st">Comentarios de Huéspedes</div>
+      <div class="sr"></div>
+      <div class="ss" id="com-count-lbl">Cargando…</div>
+    </div>
+    <!-- KPIs -->
+    <div class="krow" style="grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr));margin-bottom:14px">
+      <div class="kpi ca"><div class="kl">Respuestas</div><div class="kv" id="com-total">—</div></div>
+      <div class="kpi ca"><div class="kl">Score Prom.</div><div class="kv" id="com-score">—</div></div>
+      <div class="kpi ca"><div class="kl">Recomendarían</div><div class="kv" id="com-rec">—</div></div>
+      <div class="kpi ca"><div class="kl">Positivos</div><div class="kv" id="com-pos" style="color:var(--pac)">—</div></div>
+      <div class="kpi ca"><div class="kl">Negativos</div><div class="kv" id="com-neg" style="color:var(--neg)">—</div></div>
+    </div>
+    <!-- Filters -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center">
+      <div>
+        <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:var(--sans)">Mes</div>
+        <select id="com-f-mes" class="fsel" onchange="filterComments()"></select>
       </div>
-      <a id="drive-btn" href="#" target="_blank" style="display:none;background:var(--pac);color:var(--white);text-decoration:none;border-radius:var(--r);padding:9px 18px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;font-family:var(--sans);font-weight:400">&#8599; Open Folder</a>
+      <div>
+        <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:var(--sans)">Sentimiento</div>
+        <select id="com-f-sent" class="fsel" onchange="filterComments()">
+          <option value="">Todos</option>
+          <option value="Positivo">Positivo</option>
+          <option value="Negativo">Negativo</option>
+          <option value="Neutro">Neutro</option>
+          <option value="Sin comentario">Sin comentario</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:var(--sans)">Área</div>
+        <select id="com-f-area" class="fsel" onchange="filterComments()"><option value="">Todas</option></select>
+      </div>
+      <div>
+        <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:var(--sans)">Score mín.</div>
+        <select id="com-f-score" class="fsel" onchange="filterComments()">
+          <option value="">Cualquiera</option>
+          <option value="8">8 / 8</option>
+          <option value="7">7+</option>
+          <option value="6">6+</option>
+        </select>
+      </div>
+      <div style="margin-top:18px">
+        <button class="rfbtn" onclick="document.getElementById('com-f-mes').value='';document.getElementById('com-f-sent').value='';document.getElementById('com-f-area').value='';document.getElementById('com-f-score').value='';filterComments()">Limpiar</button>
+      </div>
+    </div>
+    <!-- Comment cards -->
+    <div id="com-list" style="display:flex;flex-direction:column;gap:10px">
+      <div style="text-align:center;color:var(--muted);padding:28px;font-size:.8rem">Cargando comentarios…</div>
     </div>
   </div>
 </div></div>
@@ -408,8 +466,9 @@ var CFG={
   SHEET1_PRODS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv', // Poster Productos
   SHEET1_CATS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=244181243&single=true&output=csv',
   SHEET1_MANUAL:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=78019589&single=true&output=csv',
+  SHEET_COMMENTS:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQmqLWbM4T9YiVuW5-bch21_FTuYbMIMqHuq1nsEzOKaqAOTT_R2Iyy0VtYsOmTOfQhqEcDwV90-UH-/pub?output=csv',
   SHEET1_OPENTABLE:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTEd6mWB_4QWaYAjE80sLlvNf3EHw60bE1IrkjeuwZnYlv7sNhGOpPgg6BeWgMEpg/pub?gid=200414384&single=true&output=csv',
-  SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ8PP8Sn3Fyrkx9RdplIgD7zqbe961KrH0z0xUemmyIXoFLTI1BYoxzt5mk_BTI-sgOOTRxIWzutG4B/pub?gid=2010216743&single=true&output=csv',
+  SHEET2_AGENDA:'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_ZrhWClakP3WwXGnHOJ_dBDh_FWRvzL0tIik-kZ5YhSwbWSCe77Yz6sSFAKsDU2JcNLJNgq3w02Qp/pub?gid=0&single=true&output=csv',
   WEEK_START: toISO(_ws),
   WEEK_LABEL: fmtWL(_ws),
   NEXT_LABEL: fmtNL(_ws)
@@ -722,13 +781,7 @@ function renderPerf(monthly,tRm,fbRev,wellRev,tOth){
 }
 
 function renderManual(m){
-  // Drive link
-  var dl=m.driveLink||'https://drive.google.com/drive/folders/1R92b0ZrzC75287Q8H8f1S6pHypaOKBKg?usp=sharing';
-  var dlw=$('drive-link-wrap'),dlb=$('drive-btn');
-  if(dlw&&dlb){
-    if(dl){dlw.innerHTML='<span style="color:var(--pac)">●</span> <a href="'+dl+'" target="_blank" style="color:var(--pac);text-decoration:none;font-weight:400">Ver fotos e reseñas</a>';dlb.href=dl;dlb.style.display='inline-block';}
-    else{dlw.innerHTML='<em style="color:var(--muted)">No folder configured</em>';dlb.style.display='none';}
-  }
+  // OTA platform scores
   $('og').textContent=m.ota.g?(+m.ota.g).toFixed(1):'\u2014';$('ogst').textContent=m.ota.g?stars(+m.ota.g):'';$('ogc').textContent=m.ota.gC?m.ota.gC+' reviews':'';
   $('ob').textContent=m.ota.b?(+m.ota.b).toFixed(1):'\u2014';$('obc').textContent=m.ota.bC?m.ota.bC+' reviews':'';
   $('oe').textContent=m.ota.e?(+m.ota.e).toFixed(1):'\u2014';$('oec').textContent=m.ota.eC?m.ota.eC+' reviews':'';
@@ -873,7 +926,8 @@ function loadAll(){
   Promise.all([
     fetchCSV(CFG.SHEET1_WEEKLY),fetchCSV(CFG.SHEET1_MONTHLY),fetchCSV(CFG.SHEET1_SALES),
     fetchCSV(CFG.SHEET1_PRODS),fetchCSV(CFG.SHEET1_MANUAL),fetchCSV(CFG.SHEET2_AGENDA),
-    fetchCSV(CFG.SHEET1_OPENTABLE).catch(function(){return[];})
+    fetchCSV(CFG.SHEET1_OPENTABLE).catch(function(){return[];}),
+    fetchCSV(CFG.SHEET_COMMENTS).catch(function(){return[];})
   ]).then(function(res){
     lt.textContent='Processing…';
     var wk=parseWeekly(res[0]);
@@ -882,6 +936,7 @@ function loadAll(){
     var manual=parseManual(res[4]);
     var agenda=parseAgendaSheet(res[5]);
     var opentable=parseOpenTableSheet(res[6],CFG.WEEK_START);
+    var comments=parseCommentsCSV(res[7]||[]);
     lt.textContent='Rendering…';
     var occ=renderOcc(wk.past,wk.fc);
     var wRev=renderWellness(agenda,CFG.WEEK_START);
@@ -889,6 +944,7 @@ function loadAll(){
     renderPerf(monthly,occ.tRm,poster.rev,wRev,0);
     renderManual(manual);
     renderOpenTable(opentable);
+    initCommentFilters(comments);
     dot.style.background='var(--pac)';dot.style.boxShadow='0 0 8px var(--pac)';
     ld.classList.add('out');
   }).catch(function(err){
@@ -897,6 +953,7 @@ function loadAll(){
     var wRev=renderWellness(DEMO.agenda,CFG.WEEK_START);
     renderPoster(DEMO.poster);renderPerf(DEMO.monthly,ecc.tRm,DEMO.poster.rev,wRev,0);renderManual(DEMO.manual);
     renderOpenTable(DEMO.opentable);
+    initCommentFilters([]);
     var e=$('err1');e.style.display='block';
     e.textContent='⚠️ Could not load live data ('+err.message+'). Showing demo data. Open via a web server (Netlify, GitHub Pages, or local server) — browsers block CSV fetching from local files.';
     dot.style.background='var(--sand-dk)';ld.classList.add('out');
@@ -926,6 +983,134 @@ document.addEventListener('DOMContentLoaded',function(){
   if(inp) inp.addEventListener('keydown',function(e){if(e.key==='Enter')checkPassword();});
   inp.focus();
 });
+
+// ── COMENTARIOS ───────────────────────────────────────────────────────────
+var ALL_COMMENTS=[];
+function parseCommentsCSV(rows){
+  // Find header row: first row where col[0]=='Folio' or col[1]=='Fecha'
+  var hIdx=-1;
+  for(var i=0;i<Math.min(rows.length,8);i++){
+    if((rows[i][0]||'').trim()==='Folio'||(rows[i][1]||'').trim()==='Fecha'){hIdx=i;break;}
+  }
+  if(hIdx<0)return[];
+  var map=buildColMap(rows[hIdx]);
+  var cFecha=findCol(map,['fecha']),cNombre=findCol(map,['nombre huésped','nombre huesped','nombre']),
+      cTel=findCol(map,['teléfono','telefono']),cScore=findCol(map,['score (/8)','score']),
+      cSent=findCol(map,['sentimiento\n(pos/neu/neg)','sentimiento']),
+      cArea=findCol(map,['área del\ncomentario','área del comentario','área']),
+      cComentario=findCol(map,['comentario']),cHab=findCol(map,['habitación','habitacion']),
+      cRec=findCol(map,['¿nos recomendaría?','nos recomendaria']),
+      cInfo=findCol(map,['¿desea info?','desea info']),
+      cCollab=findCol(map,['¿algún colaborador hizo\nespecial su estancia?','algún colaborador']);
+  var out=[];
+  for(var i=hIdx+1;i<rows.length;i++){
+    var r=rows[i];if(!r||!r.length)continue;
+    var fecha=(cFecha>=0?(r[cFecha]||''):'').trim();
+    var nombre=(cNombre>=0?(r[cNombre]||''):'').trim();
+    if(!fecha&&!nombre)continue;
+    var sentRaw=(cSent>=0?(r[cSent]||''):'').trim();
+    var sent='sin';
+    if(sentRaw==='Positivo')sent='pos';else if(sentRaw==='Negativo')sent='neg';else if(sentRaw==='Neutro')sent='neu';
+    out.push({
+      fecha:fecha,
+      nombre:nombre||'Huésped',
+      tel:(cTel>=0?(r[cTel]||''):'').trim(),
+      score:cScore>=0?parseFloat(r[cScore])||0:0,
+      sent:sent,
+      sentLabel:sentRaw||'Sin comentario',
+      area:(cArea>=0?(r[cArea]||''):'').trim(),
+      comentario:(cComentario>=0?(r[cComentario]||''):'').trim(),
+      hab:(cHab>=0?(r[cHab]||''):'').trim(),
+      rec:(cRec>=0?(r[cRec]||''):'').toLowerCase().replace(/í/g,'i').indexOf('si')>=0,
+      info:(cInfo>=0?(r[cInfo]||''):'').toLowerCase().replace(/í/g,'i').indexOf('si')>=0,
+      collab:(cCollab>=0?(r[cCollab]||''):'').trim()
+    });
+  }
+  return out;
+}
+
+function monthKeyC(r){
+  var p=(r.fecha||'').split('/');
+  if(p.length<3)return null;
+  return p[2]+'-'+p[1].padStart(2,'0');
+}
+var MES_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function initCommentFilters(rows){
+  ALL_COMMENTS=rows;
+  // Build month options
+  var keys=[...new Set(rows.map(monthKeyC).filter(Boolean))].sort().reverse();
+  var sel=$('com-f-mes');
+  sel.innerHTML='<option value="">Todos los meses</option>';
+  keys.forEach(function(k){
+    var parts=k.split('-');var o=document.createElement('option');
+    o.value=k;o.textContent=MES_ES[parseInt(parts[1])-1]+' '+parts[0];
+    sel.appendChild(o);
+  });
+  // Pre-select current month
+  var now=new Date();var curKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  if(keys.indexOf(curKey)>=0)sel.value=curKey;
+  // Build area options
+  var areas=[...new Set(rows.map(function(r){return r.area;}).filter(Boolean))].sort();
+  var asel=$('com-f-area');
+  asel.innerHTML='<option value="">Todas</option>';
+  areas.forEach(function(a){var o=document.createElement('option');o.value=a;o.textContent=a;asel.appendChild(o);});
+  filterComments();
+}
+
+function filterComments(){
+  var mes=$('com-f-mes').value,sent=$('com-f-sent').value,
+      area=$('com-f-area').value,scoreMin=parseFloat($('com-f-score').value)||0;
+  var filtered=ALL_COMMENTS.filter(function(r){
+    if(mes&&monthKeyC(r)!==mes)return false;
+    if(sent&&r.sentLabel!==sent)return false;
+    if(area&&r.area!==area)return false;
+    if(scoreMin&&r.score<scoreMin)return false;
+    return true;
+  });
+  // KPIs
+  var scores=filtered.map(function(r){return r.score;}).filter(function(s){return s>0;});
+  var avg=scores.length?(scores.reduce(function(a,b){return a+b;},0)/scores.length).toFixed(1):null;
+  var recs=filtered.filter(function(r){return r.rec;}).length;
+  var pos=filtered.filter(function(r){return r.sent==='pos';}).length;
+  var neg=filtered.filter(function(r){return r.sent==='neg';}).length;
+  $('com-total').textContent=filtered.length;
+  $('com-score').textContent=avg?avg+' / 8':'—';
+  $('com-rec').textContent=filtered.length?Math.round(recs/filtered.length*100)+'%':'—';
+  $('com-pos').textContent=pos;
+  $('com-neg').textContent=neg;
+  $('com-count-lbl').textContent=filtered.length+' respuesta'+(filtered.length!==1?'s':'');
+  // Cards - most recent first, skip "Sin comentario" with no text
+  var toShow=filtered.slice().reverse();
+  if(!toShow.length){
+    $('com-list').innerHTML='<div class="com-empty">No hay comentarios con estos filtros.</div>';return;
+  }
+  $('com-list').innerHTML=toShow.map(function(r){
+    var scoreColor=r.score>=7?'var(--pac-dk)':r.score>=5?'var(--sand-dk)':'var(--neg)';
+    var sentClass=r.sent;
+    var sentLabel=r.sentLabel||'Sin comentario';
+    var areaTag=r.area?'<span class="com-area-tag">'+r.area+'</span>':'';
+    var comentarioHtml=r.comentario
+      ? '<div class="com-text">&ldquo;'+r.comentario+'&rdquo;</div>'
+      : '<div class="com-text" style="color:var(--muted);font-style:normal">Sin comentario escrito</div>';
+    var collabHtml=r.collab?'<div class="com-collab">⭐ '+r.collab+'</div>':'';
+    var recHtml=r.rec?'<span style="font-size:.58rem;color:var(--pac);font-family:var(--sans)">✓ Recomendaría</span>':'';
+    var habHtml=r.hab?'<span style="font-size:.6rem;color:var(--muted);font-family:var(--sans)">Hab. '+r.hab+'</span>':'';
+    return '<div class="com-card">'
+      +'<div class="com-card-top">'
+        +'<div><div class="com-guest">'+r.nombre+'</div>'
+        +'<div class="com-meta">'+r.fecha+(r.tel?' &nbsp;·&nbsp; '+r.tel:'')+'</div></div>'
+        +'<div class="com-badges">'
+          +(r.score?'<span class="com-score-badge" style="color:'+scoreColor+'">'+r.score+'<span style="font-size:.55rem;color:var(--muted);font-weight:300">/8</span></span>':'')
+          +'<span class="com-sent '+sentClass+'">'+sentLabel+'</span>'
+          +areaTag
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap">'+habHtml+recHtml+'</div>'
+      +comentarioHtml+collabHtml
+      +'</div>';
+  }).join('');
+}
 
 // ── OPENTABLE PARSER ──────────────────────────────────────────────────────
 function parseOTDate(s){
