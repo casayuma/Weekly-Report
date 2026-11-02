@@ -446,7 +446,9 @@ function bars(el, list, label, color) {
 }
 function marg(x) { return x && x.revKnown ? Math.round(x.profit / x.revKnown * 100) + '%' : '—'; }
 function renderWell() {
-  var w = DATA.well, a = w.agenda || { w: [], m: [], issues: [] }, sw = w.svcW || [], sm = w.svcM || [], m = w.mtd || { cats: [], total: 0 };
+  var w = DATA.well || {}, a = w.agenda || {}, sw = w.svcW || [], sm = w.svcM || [], m = w.mtd || {};
+  a.w = a.w || []; a.m = a.m || []; a.issues = a.issues || []; w.cats = w.cats || [];
+  m.cats = m.cats || []; m.total = m.total || 0; m.start = m.start || DATA.week.end.slice(0, 8) + '01';
   var tot = function (l, k) { return l.reduce(function (s, x) { return s + x[k]; }, 0); };
   var aw = { profit: tot(a.w, 'profit'), revKnown: tot(a.w, 'revKnown') };
   $('w-rev').textContent = mxn(w.total); $('w-cnt').textContent = num(tot(sw, 'count'));
