@@ -129,6 +129,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
   <div class="brand">Casa <span>Yuma</span></div>
   <div class="bsub">Puerto Escondido · Oaxaca · MX</div>
   <div class="lbar"></div>
+  <div class="msg" id="ltime" style="color:#777"></div>
 </div>
 
 <header class="hdr">
@@ -181,19 +182,34 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 
 <!-- WELLNESS -->
 <div class="panel" id="t-well"><div class="page">
-  <div class="sec"><div class="sh"><div class="st">Wellness · Activities · Transport · Boutique</div><div class="sr"></div></div>
+  <div class="sec"><div class="sh"><div class="st">This Week</div><div class="sr"></div><div class="ss">Net of taxes · Cloudbeds</div></div>
     <div class="krow">
-      <div class="kpi sd"><div class="kl">Revenue (Cloudbeds)</div><div class="kv" id="w-rev"></div><div class="km">Net of taxes</div></div>
-      <div class="kpi sd"><div class="kl">Real Profit (Agenda)</div><div class="kv" id="w-pro"></div></div>
-      <div class="kpi sd"><div class="kl">Services</div><div class="kv" id="w-cnt"></div></div>
-      <div class="kpi sd"><div class="kl">Avg Margin</div><div class="kv" id="w-mar"></div><div class="km">Complete rows only</div></div>
+      <div class="kpi sd"><div class="kl">Revenue</div><div class="kv" id="w-rev"></div></div>
+      <div class="kpi sd"><div class="kl">Services Sold</div><div class="kv" id="w-cnt"></div></div>
+      <div class="kpi sd"><div class="kl">Real Profit</div><div class="kv" id="w-pro"></div><div class="km">Agenda · complete rows</div></div>
+      <div class="kpi sd"><div class="kl">Avg Margin</div><div class="kv" id="w-mar"></div></div>
       <div class="kpi sd"><div class="kl">Day Pass</div><div class="kv" id="w-dp"></div><div class="km" id="w-dpn"></div></div>
     </div>
     <div class="warn" id="w-dq" style="display:none;margin-top:14px"></div></div>
-  <div class="sec"><div class="sh"><div class="st">Revenue by Category</div><div class="sr"></div></div><div class="bcard" id="w-bars"></div></div>
-  <div class="sec"><div class="sh"><div class="st">Service Detail · Agenda</div><div class="sr"></div></div>
-    <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th>Service</th><th class="r">Count</th><th class="r">Revenue</th><th class="r">Real Profit</th><th class="r">Margin</th></tr></thead>
+  <div class="sec two">
+    <div><div class="sh"><div class="st">Revenue by Category</div><div class="sr"></div></div><div class="bcard" id="w-bars"></div></div>
+    <div><div class="sh"><div class="st">Margin by Category</div><div class="sr"></div><div class="ss">Agenda</div></div>
+      <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th class="r">Week</th><th class="r">Margin</th><th class="r">Month</th><th class="r">Margin</th></tr></thead><tbody id="w-mg"></tbody></table></div></div>
+  </div>
+  <div class="sec"><div class="sh"><div class="st">Service Detail · This Week</div><div class="sr"></div></div>
+    <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th>Service</th><th class="r">Count</th><th class="r">Revenue</th><th class="r">Avg Price</th></tr></thead>
     <tbody id="w-b"></tbody><tfoot id="w-f"></tfoot></table></div></div>
+  <div class="sec"><div class="sh"><div class="st" id="w-mtd-t">Month to Date</div><div class="sr"></div></div>
+    <div class="krow" style="margin-bottom:14px">
+      <div class="kpi sd"><div class="kl">Revenue MTD</div><div class="kv" id="w-mrev"></div></div>
+      <div class="kpi sd"><div class="kl">Services MTD</div><div class="kv" id="w-mcnt"></div></div>
+      <div class="kpi sd"><div class="kl">Best Seller</div><div class="kv" id="w-best" style="font-size:1.1rem"></div><div class="km" id="w-bestn"></div></div>
+      <div class="kpi sd"><div class="kl">Top Category</div><div class="kv" id="w-topc" style="font-size:1.1rem"></div><div class="km" id="w-topcn"></div></div>
+    </div>
+    <div class="two">
+      <div class="bcard" id="w-mbars"></div>
+      <div class="tcard"><table class="dt"><thead><tr><th>#</th><th>Top Services</th><th class="r">Count</th><th class="r">Revenue</th><th class="r">Share</th></tr></thead><tbody id="w-top"></tbody></table></div>
+    </div></div>
 </div></div>
 
 <!-- F&B -->
@@ -293,7 +309,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 <script>
 /* ===== CONFIG (no secrets here) ===== */
 var CFG = {
-  API: 'https://script.google.com/a/macros/casayuma.com/s/AKfycbyTuWD2Uf8Manew2KNpG0WCZTX8bMhuZA3hGV7eb-Cy2nQisGv6t6TeRBpCm3-_lmA/exec'          // Apps Script > Implementar > URL
+  API: 'https://script.google.com/macros/s/AKfycbyTuWD2Uf8Manew2KNpG0WCZTX8bMhuZA3hGV7eb-Cy2nQisGv6t6TeRBpCm3-_lmA/exec'          // Apps Script > Implementar > URL
 };
 
 var TOKEN = null, USER = null, DATA = null, WEEK = null, EDIT = null;
@@ -355,6 +371,7 @@ function signOut(msg) {
 function api(action, extra) {
   return fetch(CFG.API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(Object.assign({ action: action, session: TOKEN }, extra || {})) })
+    .catch(function () { throw new Error('Cannot reach the report server. Open the /exec URL in your browser: it should say "Casa Yuma Weekly API OK".'); })
     .then(function (r) { return r.text(); })
     .then(function (t) { try { return JSON.parse(t); } catch (e) { throw new Error('Cannot reach the report server. Check the Apps Script deployment (URL ending in /exec, access: Anyone).'); } })
     .then(function (j) { if (j.error) { if (/^AUTH/.test(j.error)) signOut(j.error); throw new Error(j.error); } return j; });
@@ -364,14 +381,17 @@ function api(action, extra) {
 function lastMonday() { var t = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }), dow = new Date(t + 'T12:00:00Z').getUTCDay(); return addD(t, -((dow + 6) % 7) - 7); }
 function maxWeek() { return lastMonday(); }   // última semana cerrada
 function shiftWeek(n) { if (!WEEK) return; var w = addD(WEEK, n); if (n > 0 && w > maxWeek()) return; WEEK = w; load(false); }
+var TICK = null;
 function load(fresh) {
   $('loading').classList.remove('out');
+  var t = 0; clearInterval(TICK); $('ltime').textContent = 'Building report…';
+  TICK = setInterval(function () { t++; $('ltime').textContent = 'Building report… ' + t + 's' + (t > 15 ? ' · first load of the week can take up to a minute' : ''); }, 1000);
   api('report', { week: WEEK, fresh: fresh }).then(function (d) {
-    DATA = d; USER = d.user; WEEK = d.week.start;
+    clearInterval(TICK); DATA = d; USER = d.user; WEEK = d.week.start;
     render();
     $('login').classList.add('out'); $('loading').classList.add('out');
   }).catch(function (e) {
-    $('loading').classList.add('out');
+    clearInterval(TICK); $('loading').classList.add('out');
     if (TOKEN) { $('warnwrap').style.display = 'block'; $('warn').textContent = 'Could not load data: ' + e.message; $('login').classList.add('out'); }
   });
 }
@@ -382,7 +402,7 @@ function render() {
   $('uname').textContent = USER.name + (USER.role === 'edit' ? ' · editor' : '');
   $('hwk').textContent = fmtD(d.week.start, { month: 'long', day: 'numeric' }) + ' – ' + fmtD(d.week.end, { month: 'long', day: 'numeric', year: 'numeric' });
   $('hsub').textContent = 'Monday to Sunday · data through ' + d.lastDay;
-  $('fts').textContent = 'Generated ' + new Date().toLocaleString('en-US');
+  $('fts').textContent = 'Generated ' + new Date().toLocaleString('en-US') + (d.ms ? ' · ' + (d.ms / 1000).toFixed(1) + 's' : '');
   $('nextBtn').style.visibility = d.week.start >= maxWeek() ? 'hidden' : 'visible';
   $('warnwrap').style.display = d.warnings.length ? 'block' : 'none';
   $('warn').innerHTML = d.warnings.map(esc).join('<br>');
@@ -424,21 +444,43 @@ function bars(el, list, label, color) {
     return '<div class="bitem"><div>' + esc(label(x)) + '</div><div class="btrack"><div class="bfill" style="width:' + (x.rev / mx * 100).toFixed(1) + '%;background:' + (color || CATC[i % 7]) + '"></div></div><div class="brev">' + mxn(x.rev) + '</div><div class="bcnt">' + (x.qty != null ? num(x.qty) + ' pcs' : '') + '</div></div>';
   }).join('') || '<div class="empty">No data</div>';
 }
+function marg(x) { return x && x.revKnown ? Math.round(x.profit / x.revKnown * 100) + '%' : '—'; }
 function renderWell() {
-  var w = DATA.well, a = w.agenda || { svcs: [], count: 0, profit: 0, revKnown: 0, issues: [] };
-  var mar = a.revKnown ? Math.round(a.profit / a.revKnown * 100) + '%' : '—';
-  $('w-rev').textContent = mxn(w.total); $('w-pro').textContent = mxn(a.profit); $('w-cnt').textContent = num(a.count); $('w-mar').textContent = mar;
+  var w = DATA.well, a = w.agenda || { w: [], m: [], issues: [] }, sw = w.svcW || [], sm = w.svcM || [], m = w.mtd || { cats: [], total: 0 };
+  var tot = function (l, k) { return l.reduce(function (s, x) { return s + x[k]; }, 0); };
+  var aw = { profit: tot(a.w, 'profit'), revKnown: tot(a.w, 'revKnown') };
+  $('w-rev').textContent = mxn(w.total); $('w-cnt').textContent = num(tot(sw, 'count'));
+  $('w-pro').textContent = mxn(aw.profit); $('w-mar').textContent = marg(aw);
   $('w-dp').textContent = mxn(w.dpRev); $('w-dpn').textContent = w.dpCount ? w.dpCount + ' pass' + (w.dpCount > 1 ? 'es' : '') : 'No sales this week';
-  bars('w-bars', w.cats.slice().sort(function (x, y) { return y.rev - x.rev; }), function (x) { return CATL[x.cat] || x.cat; });
+  var byRev = function (x, y) { return y.rev - x.rev; };
+  bars('w-bars', w.cats.slice().sort(byRev), function (x) { return CATL[x.cat] || x.cat; });
+  // margen por categoría (Agenda): semana y mes
+  var cats = {}; a.w.forEach(function (x) { cats[x.cat] = { w: x }; }); a.m.forEach(function (x) { (cats[x.cat] = cats[x.cat] || {}).m = x; });
+  $('w-mg').innerHTML = Object.keys(cats).sort(function (p, q) { return ((cats[q].m || {}).rev || 0) - ((cats[p].m || {}).rev || 0); }).map(function (k) {
+    var c = cats[k]; return '<tr><td class="b">' + esc(k) + '</td><td class="r">' + mxn((c.w || {}).rev || 0) + '</td><td class="r">' + marg(c.w) + '</td><td class="r">' + mxn((c.m || {}).rev || 0) + '</td><td class="r">' + marg(c.m) + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty">No Agenda records</td></tr>';
   $('w-dq').style.display = a.issues.length ? 'block' : 'none';
   $('w-dq').innerHTML = a.issues.length ? '<b>' + a.issues.length + ' Agenda row(s) incomplete</b> (excluded from margin):<br>' + a.issues.map(function (i) {
     return '• ' + esc(i.d + ' · ' + (i.guest || '—') + ' · ' + i.cat + ' / ' + i.svc) + ' → <em>' + esc(i.issue) + '</em>'; }).join('<br>') : '';
+  // detalle por servicio (semana)
   var last = '';
-  $('w-b').innerHTML = a.svcs.sort(function (x, y) { return x.cat === y.cat ? y.rev - x.rev : x.cat.localeCompare(y.cat); }).map(function (s) {
-    var c = s.cat !== last ? esc(s.cat) : ''; last = s.cat;
-    return '<tr><td class="b">' + c + '</td><td>' + esc(s.svc) + '</td><td class="r">' + s.count + '</td><td class="r">' + mxn(s.rev) + '</td><td class="r b">' + (s.revKnown ? mxn(s.profit) : '—') + '</td><td class="r">' + (s.revKnown ? Math.round(s.profit / s.revKnown * 100) + '%' : '—') + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" class="empty">No Agenda records this week</td></tr>';
-  $('w-f').innerHTML = '<tr><td colspan="2">TOTAL</td><td class="r">' + a.count + '</td><td class="r">' + mxn(a.rev) + '</td><td class="r">' + mxn(a.profit) + '</td><td class="r">' + mar + '</td></tr>';
+  $('w-b').innerHTML = sw.slice().sort(function (x, y) { return x.cat === y.cat ? y.rev - x.rev : x.cat.localeCompare(y.cat); }).map(function (s) {
+    var c = s.cat !== last ? esc(CATL[s.cat] || s.cat) : ''; last = s.cat;
+    return '<tr><td class="b">' + c + '</td><td>' + esc(s.svc) + '</td><td class="r">' + s.count + '</td><td class="r b">' + mxn(s.rev) + '</td><td class="r sm">' + (s.count > 0 ? mxn(s.rev / s.count) : '—') + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty">No services this week</td></tr>';
+  $('w-f').innerHTML = '<tr><td colspan="2">TOTAL</td><td class="r">' + tot(sw, 'count') + '</td><td class="r">' + mxn(tot(sw, 'rev')) + '</td><td></td></tr>';
+  // mes a la fecha
+  var mn = MO[+m.start.slice(5, 7) - 1];
+  $('w-mtd-t').textContent = mn + ' ' + m.start.slice(0, 4) + ' · Month to Date (through ' + fmtD(DATA.week.end, { month: 'short', day: 'numeric' }) + ')';
+  $('w-mrev').textContent = mxn(m.total); $('w-mcnt').textContent = num(tot(sm, 'count'));
+  var best = sm.slice().sort(function (x, y) { return y.count - x.count; })[0];
+  $('w-best').textContent = best ? best.svc : '—'; $('w-bestn').textContent = best ? best.count + ' sold · ' + mxn(best.rev) : '';
+  var tc = m.cats.slice().sort(byRev)[0];
+  $('w-topc').textContent = tc ? (CATL[tc.cat] || tc.cat) : '—'; $('w-topcn').textContent = tc && m.total ? Math.round(tc.rev / m.total * 100) + '% of month' : '';
+  bars('w-mbars', m.cats.slice().sort(byRev), function (x) { return CATL[x.cat] || x.cat; });
+  $('w-top').innerHTML = sm.slice(0, 10).map(function (s, i) {
+    return '<tr><td class="sm">' + (i + 1) + '</td><td class="b">' + esc(s.svc) + '<div class="sm">' + esc(CATL[s.cat] || s.cat) + '</div></td><td class="r">' + s.count + '</td><td class="r b">' + mxn(s.rev) + '</td><td class="r sm">' + (m.total ? Math.round(s.rev / m.total * 100) + '%' : '—') + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty">No data</td></tr>';
 }
 
 /* ===== F&B ===== */
