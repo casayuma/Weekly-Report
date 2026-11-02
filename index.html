@@ -22,7 +22,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
 .brand span,.logo span{color:var(--sand)}
 .bsub{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#777;margin-bottom:32px}
 .lf{display:flex;flex-direction:column;gap:10px;width:min(300px,90vw)}
-.lf input{background:#16130f;border:1px solid #363230;border-radius:var(--r);color:var(--wool);font:inherit;font-size:.9rem;padding:12px 14px;outline:none}
+.lf select,.lf input{background:#16130f;border:1px solid #363230;border-radius:var(--r);color:var(--wool);font:inherit;font-size:.9rem;padding:12px 14px;outline:none}
 .lf input:focus{border-color:var(--sand)}
 .lf button{background:var(--sand-dk);border:none;border-radius:var(--r);color:var(--ink);font:inherit;font-size:.7rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:12px;cursor:pointer}
 .msg{font-size:.72rem;color:#c98;margin-top:16px;min-height:18px;max-width:340px;line-height:1.5}
@@ -118,9 +118,9 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
   <div class="brand">Casa <span>Yuma</span></div>
   <div class="bsub">Weekly Report · Confidential</div>
   <form class="lf" onsubmit="doLogin(event)">
-    <input id="lemail" type="email" placeholder="Email" autocomplete="username" required>
-    <input id="lpw" type="password" placeholder="Password" autocomplete="current-password" required>
-    <button id="lbtn">Sign in</button>
+    <select id="luser" required><option value="">Loading names…</option></select>
+    <input id="lcode" inputmode="numeric" maxlength="6" placeholder="6-digit code from your email" autocomplete="one-time-code" style="display:none">
+    <button id="lbtn">Send me a code</button>
   </form>
   <div class="msg" id="lmsg"></div>
 </div>
@@ -315,25 +315,48 @@ window.onload = function () {
   document.querySelectorAll('.tbtn').forEach(function (b) { b.onclick = function () { tab(b.dataset.t, b); }; });
   ['f-mes', 'f-sent', 'f-area'].forEach(function (id) { $(id).onchange = renderComments; });
   TOKEN = ss('cy_sess');
-  if (TOKEN) load(false); else $('lemail').focus();
+  if (TOKEN) load(false); else loadUsers();
 };
+function loadUsers() {
+  api('users', {}).then(function (j) {
+    $('luser').innerHTML = '<option value="">Select your name</option>' + j.users.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('');
+    var last = ss('cy_name'); if (last) $('luser').value = last;
+  }).catch(function (e) { $('lmsg').textContent = e.message; });
+}
+var CODE_SENT = false;
+$('luser') && ($('luser').onchange = function () { CODE_SENT = false; $('lcode').style.display = 'none'; $('lbtn').textContent = 'Send me a code'; });
 function doLogin(e) {
   e.preventDefault();
-  $('lbtn').textContent = 'Signing in…'; $('lmsg').textContent = '';
-  api('login', { email: $('lemail').value, password: $('lpw').value }).then(function (j) {
-    TOKEN = j.session; ss('cy_sess', TOKEN); $('lpw').value = ''; load(false);
-  }).catch(function (err) { $('lmsg').textContent = err.message; }).finally(function () { $('lbtn').textContent = 'Sign in'; });
+  var name = $('luser').value; if (!name) return;
+  var btn = $('lbtn'); btn.disabled = true; $('lmsg').textContent = '';
+  if (!CODE_SENT) {
+    btn.textContent = 'Sending…';
+    api('sendCode', { name: name }).then(function (j) {
+      CODE_SENT = true; ss('cy_name', name);
+      $('lcode').style.display = ''; $('lcode').focus(); btn.textContent = 'Enter';
+      $('lmsg').textContent = 'Code sent to ' + j.sent;
+    }).catch(function (err) { $('lmsg').textContent = err.message; btn.textContent = 'Send me a code'; })
+      .finally(function () { btn.disabled = false; });
+  } else {
+    btn.textContent = 'Checking…';
+    api('verify', { name: name, code: $('lcode').value }).then(function (j) {
+      TOKEN = j.session; ss('cy_sess', TOKEN); $('lcode').value = ''; load(false);
+    }).catch(function (err) { $('lmsg').textContent = err.message; })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Enter'; });
+  }
 }
 function signOut(msg) {
   if (TOKEN && typeof msg !== 'string') api('logout', {}).catch(function () {});
   ss('cy_sess', null); TOKEN = null;
   $('login').classList.remove('out'); $('loading').classList.add('out');
   $('lmsg').textContent = typeof msg === 'string' ? msg.replace(/^AUTH: /, '') : '';
+  CODE_SENT = false; $('lcode').style.display = 'none'; $('lbtn').textContent = 'Send me a code'; loadUsers();
 }
 function api(action, extra) {
   return fetch(CFG.API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(Object.assign({ action: action, session: TOKEN }, extra || {})) })
-    .then(function (r) { return r.json(); })
+    .then(function (r) { return r.text(); })
+    .then(function (t) { try { return JSON.parse(t); } catch (e) { throw new Error('Cannot reach the report server. Check the Apps Script deployment (URL ending in /exec, access: Anyone).'); } })
     .then(function (j) { if (j.error) { if (/^AUTH/.test(j.error)) signOut(j.error); throw new Error(j.error); } return j; });
 }
 
