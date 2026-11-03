@@ -194,15 +194,15 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
   <div class="sec two">
     <div><div class="sh"><div class="st">Revenue by Category</div><div class="sr"></div></div><div class="bcard" id="w-bars"></div></div>
     <div><div class="sh"><div class="st">Margin by Category</div><div class="sr"></div><div class="ss">Agenda</div></div>
-      <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th class="r">Week</th><th class="r">Margin</th><th class="r">Month</th><th class="r">Margin</th></tr></thead><tbody id="w-mg"></tbody></table></div></div>
+      <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th class="r">Week</th><th class="r">Margin</th><th class="r" id="w-mgm">Month</th><th class="r">Margin</th></tr></thead><tbody id="w-mg"></tbody></table></div></div>
   </div>
   <div class="sec"><div class="sh"><div class="st">Service Detail · This Week</div><div class="sr"></div></div>
     <div class="tcard"><table class="dt"><thead><tr><th>Category</th><th>Service</th><th class="r">Count</th><th class="r">Revenue</th><th class="r">Avg Price</th></tr></thead>
     <tbody id="w-b"></tbody><tfoot id="w-f"></tfoot></table></div></div>
-  <div class="sec"><div class="sh"><div class="st" id="w-mtd-t">Month to Date</div><div class="sr"></div></div>
+  <div class="sec"><div class="sh"><div class="st" id="w-mtd-t">Month</div><div class="sr"></div><select class="fsel" id="w-msel" onchange="pickMonth(this.value)"></select></div>
     <div class="krow" style="margin-bottom:14px">
-      <div class="kpi sd"><div class="kl">Revenue MTD</div><div class="kv" id="w-mrev"></div></div>
-      <div class="kpi sd"><div class="kl">Services MTD</div><div class="kv" id="w-mcnt"></div></div>
+      <div class="kpi sd"><div class="kl">Revenue</div><div class="kv" id="w-mrev"></div></div>
+      <div class="kpi sd"><div class="kl">Services Sold</div><div class="kv" id="w-mcnt"></div></div>
       <div class="kpi sd"><div class="kl">Best Seller</div><div class="kv" id="w-best" style="font-size:1.1rem"></div><div class="km" id="w-bestn"></div></div>
       <div class="kpi sd"><div class="kl">Top Category</div><div class="kv" id="w-topc" style="font-size:1.1rem"></div><div class="km" id="w-topcn"></div></div>
     </div>
@@ -445,44 +445,56 @@ function bars(el, list, label, color) {
   }).join('') || '<div class="empty">No data</div>';
 }
 function marg(x) { return x && x.revKnown ? Math.round(x.profit / x.revKnown * 100) + '%' : '—'; }
+var MONTH = null;
 function renderWell() {
-  var w = DATA.well || {}, a = w.agenda || {}, sw = w.svcW || [], sm = w.svcM || [], m = w.mtd || {};
-  a.w = a.w || []; a.m = a.m || []; a.issues = a.issues || []; w.cats = w.cats || [];
-  m.cats = m.cats || []; m.total = m.total || 0; m.start = m.start || DATA.week.end.slice(0, 8) + '01';
-  var tot = function (l, k) { return l.reduce(function (s, x) { return s + x[k]; }, 0); };
-  var aw = { profit: tot(a.w, 'profit'), revKnown: tot(a.w, 'revKnown') };
+  var w = DATA.well || {}, sw = w.svcW || [], aw = w.agendaW || [], iss = w.issues || [];
+  var tot = function (l, k) { return l.reduce(function (s, x) { return s + (x[k] || 0); }, 0); };
+  var a = { profit: tot(aw, 'profit'), revKnown: tot(aw, 'revKnown') };
   $('w-rev').textContent = mxn(w.total); $('w-cnt').textContent = num(tot(sw, 'count'));
-  $('w-pro').textContent = mxn(aw.profit); $('w-mar').textContent = marg(aw);
+  $('w-pro').textContent = mxn(a.profit); $('w-mar').textContent = marg(a);
   $('w-dp').textContent = mxn(w.dpRev); $('w-dpn').textContent = w.dpCount ? w.dpCount + ' pass' + (w.dpCount > 1 ? 'es' : '') : 'No sales this week';
-  var byRev = function (x, y) { return y.rev - x.rev; };
-  bars('w-bars', w.cats.slice().sort(byRev), function (x) { return CATL[x.cat] || x.cat; });
-  // margen por categoría (Agenda): semana y mes
-  var cats = {}; a.w.forEach(function (x) { cats[x.cat] = { w: x }; }); a.m.forEach(function (x) { (cats[x.cat] = cats[x.cat] || {}).m = x; });
-  $('w-mg').innerHTML = Object.keys(cats).sort(function (p, q) { return ((cats[q].m || {}).rev || 0) - ((cats[p].m || {}).rev || 0); }).map(function (k) {
-    var c = cats[k]; return '<tr><td class="b">' + esc(k) + '</td><td class="r">' + mxn((c.w || {}).rev || 0) + '</td><td class="r">' + marg(c.w) + '</td><td class="r">' + mxn((c.m || {}).rev || 0) + '</td><td class="r">' + marg(c.m) + '</td></tr>';
-  }).join('') || '<tr><td colspan="5" class="empty">No Agenda records</td></tr>';
-  $('w-dq').style.display = a.issues.length ? 'block' : 'none';
-  $('w-dq').innerHTML = a.issues.length ? '<b>' + a.issues.length + ' Agenda row(s) incomplete</b> (excluded from margin):<br>' + a.issues.map(function (i) {
+  bars('w-bars', (w.cats || []).slice().sort(function (x, y) { return y.rev - x.rev; }), function (x) { return CATL[x.cat] || x.cat; });
+  $('w-dq').style.display = iss.length ? 'block' : 'none';
+  $('w-dq').innerHTML = iss.length ? '<b>' + iss.length + ' Agenda row(s) incomplete</b> (excluded from margin):<br>' + iss.map(function (i) {
     return '• ' + esc(i.d + ' · ' + (i.guest || '—') + ' · ' + i.cat + ' / ' + i.svc) + ' → <em>' + esc(i.issue) + '</em>'; }).join('<br>') : '';
-  // detalle por servicio (semana)
   var last = '';
   $('w-b').innerHTML = sw.slice().sort(function (x, y) { return x.cat === y.cat ? y.rev - x.rev : x.cat.localeCompare(y.cat); }).map(function (s) {
     var c = s.cat !== last ? esc(CATL[s.cat] || s.cat) : ''; last = s.cat;
     return '<tr><td class="b">' + c + '</td><td>' + esc(s.svc) + '</td><td class="r">' + s.count + '</td><td class="r b">' + mxn(s.rev) + '</td><td class="r sm">' + (s.count > 0 ? mxn(s.rev / s.count) : '—') + '</td></tr>';
   }).join('') || '<tr><td colspan="5" class="empty">No services this week</td></tr>';
   $('w-f').innerHTML = '<tr><td colspan="2">TOTAL</td><td class="r">' + tot(sw, 'count') + '</td><td class="r">' + mxn(tot(sw, 'rev')) + '</td><td></td></tr>';
-  // mes a la fecha
-  var mn = MO[+m.start.slice(5, 7) - 1];
-  $('w-mtd-t').textContent = mn + ' ' + m.start.slice(0, 4) + ' · Month to Date (through ' + fmtD(DATA.week.end, { month: 'short', day: 'numeric' }) + ')';
-  $('w-mrev').textContent = mxn(m.total); $('w-mcnt').textContent = num(tot(sm, 'count'));
-  var best = sm.slice().sort(function (x, y) { return y.count - x.count; })[0];
+  // selector de meses: enero del año hasta el mes actual
+  var cur = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 7), opts = [];
+  for (var y = +cur.slice(0, 4) - 1; y <= +cur.slice(0, 4); y++) for (var mo = 1; mo <= 12; mo++) { var k = y + '-' + ('0' + mo).slice(-2); if (k >= '2026-01' && k <= cur) opts.push(k); }
+  MONTH = w.month || null;
+  $('w-msel').innerHTML = opts.reverse().map(function (k) { return '<option value="' + k + '">' + MO[+k.slice(5) - 1] + ' ' + k.slice(0, 4) + '</option>'; }).join('');
+  if (MONTH) $('w-msel').value = MONTH.start.slice(0, 7);
+  renderMonth();
+}
+function pickMonth(ym) {
+  $('w-mtd-t').textContent = 'Loading ' + MO[+ym.slice(5) - 1] + '…';
+  api('month', { month: ym }).then(function (j) { MONTH = j.month; renderMonth(); })
+    .catch(function (e) { $('w-mtd-t').textContent = e.message; });
+}
+function renderMonth() {
+  var m = MONTH || { start: DATA.week.end.slice(0, 8) + '01', end: DATA.week.end, cats: [], total: 0, count: 0, svc: [], agenda: [] };
+  var aw = (DATA.well || {}).agendaW || [], am = m.agenda || [], byRev = function (x, y) { return y.rev - x.rev; };
+  var full = m.end.slice(8) === new Date(Date.UTC(+m.start.slice(0, 4), +m.start.slice(5, 7), 0)).toISOString().slice(8, 10);
+  $('w-mtd-t').textContent = MO[+m.start.slice(5, 7) - 1] + ' ' + m.start.slice(0, 4) + (full ? ' · full month' : ' · through ' + fmtD(m.end, { month: 'short', day: 'numeric' }));
+  $('w-mgm').textContent = MO[+m.start.slice(5, 7) - 1];
+  $('w-mrev').textContent = mxn(m.total); $('w-mcnt').textContent = num(m.count);
+  var best = (m.svc || []).slice().sort(function (x, y) { return y.count - x.count; })[0];
   $('w-best').textContent = best ? best.svc : '—'; $('w-bestn').textContent = best ? best.count + ' sold · ' + mxn(best.rev) : '';
   var tc = m.cats.slice().sort(byRev)[0];
   $('w-topc').textContent = tc ? (CATL[tc.cat] || tc.cat) : '—'; $('w-topcn').textContent = tc && m.total ? Math.round(tc.rev / m.total * 100) + '% of month' : '';
   bars('w-mbars', m.cats.slice().sort(byRev), function (x) { return CATL[x.cat] || x.cat; });
-  $('w-top').innerHTML = sm.slice(0, 10).map(function (s, i) {
+  $('w-top').innerHTML = (m.svc || []).slice(0, 10).map(function (s, i) {
     return '<tr><td class="sm">' + (i + 1) + '</td><td class="b">' + esc(s.svc) + '<div class="sm">' + esc(CATL[s.cat] || s.cat) + '</div></td><td class="r">' + s.count + '</td><td class="r b">' + mxn(s.rev) + '</td><td class="r sm">' + (m.total ? Math.round(s.rev / m.total * 100) + '%' : '—') + '</td></tr>';
   }).join('') || '<tr><td colspan="5" class="empty">No data</td></tr>';
+  var cats = {}; aw.forEach(function (x) { cats[x.cat] = { w: x }; }); am.forEach(function (x) { (cats[x.cat] = cats[x.cat] || {}).m = x; });
+  $('w-mg').innerHTML = Object.keys(cats).sort(function (p, q) { return ((cats[q].m || {}).rev || 0) - ((cats[p].m || {}).rev || 0); }).map(function (k) {
+    var c = cats[k]; return '<tr><td class="b">' + esc(k) + '</td><td class="r">' + mxn((c.w || {}).rev || 0) + '</td><td class="r">' + marg(c.w) + '</td><td class="r">' + mxn((c.m || {}).rev || 0) + '</td><td class="r">' + marg(c.m) + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="empty">No Agenda records</td></tr>';
 }
 
 /* ===== F&B ===== */
