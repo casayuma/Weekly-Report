@@ -589,7 +589,8 @@ function closeEdit() { $('modal').classList.remove('on'); EDIT = null; }
 function saveEdit() {
   var data = SCHEMA[EDIT].single ? readInputs($('m-body')) || {} : [].map.call($('m-rows').children, readInputs).filter(Boolean);
   $('m-save').textContent = 'Saving…';
-  api('save', { section: EDIT, data: data }).then(function () { closeEdit(); load(true); })
+  var sec = EDIT;
+  api('save', { section: sec, data: data }).then(function (j) { DATA.manual[sec] = data; DATA.manual.updated[sec] = j.updated; renderManual(); closeEdit(); })
     .catch(function (e) { alert(e.message); }).finally(function () { $('m-save').textContent = 'Save'; });
 }
 
@@ -621,7 +622,7 @@ function uploadOT(input) {
       var iso = /^\d{4}-\d{2}-\d{2}/.test(f) ? f.slice(0, 10) : m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : '';
       return { fecha: iso, hora: r[C.h] || '', nombre: r[C.n] || '', size: parseInt(r[C.s]) || 0, fuente: r[C.src] || '', etiqueta: C.e >= 0 ? r[C.e] || '' : '' };
     }).filter(function (r) { return r.fecha && r.nombre; });
-    api('opentable', { rows: out }).then(function (j) { alert(j.added + ' new reservations loaded (' + j.skipped + ' already existed).'); load(true); })
+    api('opentable', { rows: out }).then(function (j) { alert(j.added + ' new reservations loaded (' + j.skipped + ' already existed).'); load(false); })
       .catch(function (e) { alert(e.message); });
     input.value = '';
   };
