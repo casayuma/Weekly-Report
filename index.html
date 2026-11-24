@@ -385,7 +385,7 @@ var TICK = null;
 function load(fresh) {
   $('loading').classList.remove('out');
   var t = 0; clearInterval(TICK); $('ltime').textContent = 'Building report…';
-  TICK = setInterval(function () { t++; $('ltime').textContent = 'Building report… ' + t + 's' + (t > 15 ? ' · first load of the week can take up to a minute' : ''); }, 1000);
+  TICK = setInterval(function () { t++; $('ltime').textContent = 'Building report… ' + t + 's' + (t > 15 ? ' · first load of a week takes a while; the next ones are cached' : ''); }, 1000);
   api('report', { week: WEEK, fresh: fresh }).then(function (d) {
     clearInterval(TICK); DATA = d; USER = d.user; WEEK = d.week.start;
     render();
@@ -436,7 +436,7 @@ function renderOcc() {
 }
 
 /* ===== WELLNESS ===== */
-var CATL = { 'Spa': 'Spa & Massages', 'Wellness': 'Classes & Ceremonies', 'Actividades': 'Activities', 'Transportación': 'Transport (La Ola)', 'Day Pass': 'Day Pass', 'Shop / Boutique': 'Boutique', 'Lavandería': 'Laundry' };
+var CATL = { 'Spa': 'Spa & Massages', 'Wellness': 'Classes & Ceremonies', 'Actividades': 'Activities', 'Transportación': 'Transport (La Ola)', 'Day Pass': 'Day Pass', 'Shop / Boutique': 'Boutique', 'Lavandería': 'Laundry', 'Taxis': 'Transport (taxis)', 'Otros': 'Other' };
 var CATC = ['var(--pac)', 'var(--cact)', 'var(--car)', 'var(--sand-dk)', 'var(--pac-dk)', 'var(--ink2)', 'var(--muted)'];
 function bars(el, list, label, color) {
   var mx = list[0] ? list[0].rev : 1;
@@ -493,7 +493,7 @@ function renderMonth() {
   }).join('') || '<tr><td colspan="5" class="empty">No data</td></tr>';
   var cats = {}; aw.forEach(function (x) { cats[x.cat] = { w: x }; }); am.forEach(function (x) { (cats[x.cat] = cats[x.cat] || {}).m = x; });
   $('w-mg').innerHTML = Object.keys(cats).sort(function (p, q) { return ((cats[q].m || {}).rev || 0) - ((cats[p].m || {}).rev || 0); }).map(function (k) {
-    var c = cats[k]; return '<tr><td class="b">' + esc(k) + '</td><td class="r">' + mxn((c.w || {}).rev || 0) + '</td><td class="r">' + marg(c.w) + '</td><td class="r">' + mxn((c.m || {}).rev || 0) + '</td><td class="r">' + marg(c.m) + '</td></tr>';
+    var c = cats[k]; return '<tr><td class="b">' + esc(CATL[k] || k) + '</td><td class="r">' + mxn((c.w || {}).rev || 0) + '</td><td class="r">' + marg(c.w) + '</td><td class="r">' + mxn((c.m || {}).rev || 0) + '</td><td class="r">' + marg(c.m) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" class="empty">No Agenda records</td></tr>';
 }
 
@@ -517,7 +517,7 @@ function renderFB() {
 
 /* ===== PERFORMANCE ===== */
 function renderPerf() {
-  var p = DATA.perf, m = p.months, cm = Number(DATA.week.end.slice(5, 7)) - 1, c = m[cm];
+  var p = DATA.perf, m = p.months, cm = Number(addD(DATA.week.start, 3).slice(5, 7)) - 1, c = m[cm];   // mismo mes que usa el servidor (el de más días de la semana)
   $('perf-t').textContent = p.year + ' vs ' + (p.year - 1) + ' vs Budget';
   $('mtd-t').textContent = MO[cm] + ' ' + p.year + ' · month to date';
   $('m-o').textContent = pct(c.o); $('m-om').textContent = 'LY ' + pct(c.oLY) + ' · Budget ' + pct(c.bO); badge('m-od', chg(c.o, c.oLY), 'vs LY');
@@ -647,7 +647,7 @@ function renderComments() {
   var sc = f.filter(function (r) { return r.score > 0; });
   $('c-n').textContent = f.length;
   $('c-s').textContent = sc.length ? (sc.reduce(function (s, r) { return s + r.score; }, 0) / sc.length).toFixed(1) + ' / 8' : '—';
-  $('c-r').textContent = f.length ? Math.round(f.filter(function (r) { return r.rec; }).length / f.length * 100) + '%' : '—';
+  $('c-r').textContent = f.length ? Math.round(f.filter(function (r) { return r.rec; }).length / (sc.length || 1) * 100) + '%' : '—';   // solo encuestas contestadas (con score)
   $('c-p').textContent = f.filter(function (r) { return r.sent === 'Positivo'; }).length;
   $('c-ng').textContent = f.filter(function (r) { return r.sent === 'Negativo'; }).length;
   $('com-lbl').textContent = f.length + ' response' + (f.length !== 1 ? 's' : '');
