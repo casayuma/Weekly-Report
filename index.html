@@ -175,7 +175,7 @@ body{font-family:var(--sans);background:var(--canvas);color:var(--ink);min-heigh
       <div class="kpi sd"><div class="kl">Wellness Profit</div><div class="kv" id="o-wp"></div><div class="km" id="o-wpm"></div></div>
     </div></div>
   <div class="sec"><div class="sh"><div class="st">Combined Revenue &amp; Profit by Department</div><div class="sr"></div></div>
-    <div class="tcard"><table class="dt"><thead><tr><th>Department</th><th class="r">Revenue</th><th class="r">% of total</th><th class="c">vs prev week</th><th class="r">Profit</th><th class="r">Margin</th></tr></thead>
+    <div class="tcard"><table class="dt"><thead><tr><th>Department</th><th class="r">Revenue</th><th class="r">% of total</th><th class="c">vs prev week</th><th class="r">Profit</th></tr></thead>
     <tbody id="mix-b"></tbody></table></div>
     <div class="upd" id="mix-n"></div></div>
 </div></div>
@@ -412,7 +412,7 @@ function render() {
   $('uname').textContent = USER.name + (USER.role === 'edit' ? ' · editor' : '');
   $('hwk').textContent = fmtD(d.week.start, { month: 'long', day: 'numeric' }) + ' – ' + fmtD(d.week.end, { month: 'long', day: 'numeric', year: 'numeric' });
   $('hsub').textContent = 'Monday to Sunday · data through ' + d.lastDay;
-  $('fts').textContent = 'Generated ' + new Date().toLocaleString('en-US') + (d.ms ? ' · ' + (d.ms / 1000).toFixed(1) + 's' : '') + (d.timing ? ' · ' + Object.keys(d.timing).map(function (k) { return k + ' ' + (d.timing[k] > 99 ? (d.timing[k] / 1000).toFixed(1) + 's' : d.timing[k]); }).join(', ') : '');
+  $('fts').textContent = (d.builtAt ? 'Data built ' + d.builtAt + ' · ' : '') + 'Viewed ' + new Date().toLocaleString('en-US') + (d.ms ? ' · ' + (d.ms / 1000).toFixed(1) + 's' : '') + (d.timing ? ' · ' + Object.keys(d.timing).map(function (k) { return k + ' ' + (d.timing[k] > 99 ? (d.timing[k] / 1000).toFixed(1) + 's' : d.timing[k]); }).join(', ') : '');
   $('nextBtn').style.visibility = d.week.start >= maxWeek() ? 'hidden' : 'visible';
   $('warnwrap').style.display = d.warnings.length ? 'block' : 'none';
   $('warn').innerHTML = d.warnings.map(esc).join('<br>');
@@ -549,7 +549,7 @@ function renderOverall(x) {
   $('o-tot').textContent = mxn(x.total);
   badge('o-totd', pv ? chg(x.total, pv.total) : null, 'vs prev week');
   $('o-wp').textContent = known ? mxn(prof) : '—';
-  $('o-wpm').textContent = known ? marg({ profit: prof, revKnown: known }) + ' margin · Wellness only' : 'No cost data yet';
+  $('o-wpm').textContent = known ? 'Wellness only' : 'No cost data yet';
 }
 /* Ingresos de todos los departamentos. Utilidad solo donde hay costos capturados (Wellness · Agenda); no se inventa en Rooms ni F&B. */
 function renderMix(x) {
@@ -559,14 +559,18 @@ function renderMix(x) {
   var sh = function (v) { return tot ? Math.round(v / tot * 100) + '%' : '—'; };
   var row = function (label, rev, prevRev, profit, margin, sub, bold) {
     return '<tr' + (bold ? ' style="font-weight:500"' : '') + '><td class="' + (sub ? 'sm' : 'b') + '"' + (sub ? ' style="padding-left:28px"' : '') + '>' + esc(label) + '</td><td class="r' + (sub ? ' sm' : ' b') + '">' + mxn(rev) + '</td><td class="r sm">' + sh(rev) + '</td><td class="c">' +
-      (prevRev == null ? '<span class="sm">—</span>' : delta(chg(rev, prevRev))) + '</td><td class="r">' + (profit == null ? '<span class="sm">—</span>' : mxn(profit)) + '</td><td class="r">' + (margin || '<span class="sm">—</span>') + '</td></tr>';
+      (prevRev == null ? '<span class="sm">—</span>' : delta(chg(rev, prevRev))) + '</td><td class="r">' + (profit == null ? '<span class="sm">—</span>' : mxn(profit)) + '</td></tr>';
   };
   var rows = [row('Rooms', x.room, pv.room, null, null)];
   rows.push(row('Food & Beverage', x.ab, pv.ab, null, null));
   [['Restaurant', f.rest], ['Events', f.ev], ['Minibar', f.minibar], ['Cigars', f.cig]].forEach(function (s) { if (s[1]) rows.push(row(s[0], s[1], null, null, null, true)); });
   rows.push(row('Wellness & Activities', w.total || 0, pv.well, known ? prof : null, known ? marg({ profit: prof, revKnown: known }) : null));
   (w.cats || []).slice().sort(function (a, b) { return b.rev - a.rev; }).forEach(function (c) { rows.push(row(CATL[c.cat] || c.cat, c.rev, null, null, null, true)); });
-  if (Math.abs(other) > 0.5) rows.push(row('Other / miscellaneous', other, pOther, null, null));
+  if (Math.abs(other) > 0.5) {
+    rows.push(row('Other room charges & misc.', other, pOther, null, null));
+    var o = x.other || {};
+    [['Other room charges', o.habExtras], ['No-Show', o.noShow], ['Early check-in', o.early], ['Late check-out', o.late], ['Pet fee', o.pet], ['Other misc.', o.misc]].forEach(function (z) { if (Math.abs(z[1] || 0) > 0.5) rows.push(row(z[0], z[1], null, null, null, true)); });
+  }
   rows.push(row('TOTAL HOTEL', tot, pv.total, null, null, false, true));
   $('mix-b').innerHTML = rows.join('');
   $('mix-n').textContent = 'Profit is shown only where costs are recorded (Wellness · Agenda rows with cost' + (known && w.total ? '; covers ' + Math.round(known / w.total * 100) + '% of Wellness revenue' : '') + '). Rooms and F&B costs are not part of this report. Prev week = the 7 days before.';
