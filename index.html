@@ -402,7 +402,7 @@ function render() {
   $('uname').textContent = USER.name + (USER.role === 'edit' ? ' · editor' : '');
   $('hwk').textContent = fmtD(d.week.start, { month: 'long', day: 'numeric' }) + ' – ' + fmtD(d.week.end, { month: 'long', day: 'numeric', year: 'numeric' });
   $('hsub').textContent = 'Monday to Sunday · data through ' + d.lastDay;
-  $('fts').textContent = 'Generated ' + new Date().toLocaleString('en-US') + (d.ms ? ' · ' + (d.ms / 1000).toFixed(1) + 's' : '');
+  $('fts').textContent = 'Generated ' + new Date().toLocaleString('en-US') + (d.ms ? ' · ' + (d.ms / 1000).toFixed(1) + 's' : '') + (d.timing ? ' · ' + Object.keys(d.timing).map(function (k) { return k + ' ' + (d.timing[k] > 99 ? (d.timing[k] / 1000).toFixed(1) + 's' : d.timing[k]); }).join(', ') : '');
   $('nextBtn').style.visibility = d.week.start >= maxWeek() ? 'hidden' : 'visible';
   $('warnwrap').style.display = d.warnings.length ? 'block' : 'none';
   $('warn').innerHTML = d.warnings.map(esc).join('<br>');
