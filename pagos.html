@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Yuma · Pagos a Proveedores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#2C6E73; --gold:#E1D082; --wool:#EAE3CD; --cactus:#72785E; --purple:#88285C;
+  --ink:#20302f; --paper:#F5F1E6; --line:#d8cfb8;
+  --ok:#3f7d4e; --warn:#b5892a; --bad:#a8324a;
+  --mono:'Spline Sans Mono',ui-monospace,monospace; --disp:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--mono);background:var(--paper);color:var(--ink);line-height:1.5;font-size:15px}
+h1,h2,h3{font-family:var(--disp);font-weight:600;line-height:1.1}
+a{color:var(--blue)} button{font-family:var(--mono);cursor:pointer}
+#gate{position:fixed;inset:0;background:var(--purple);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.gate-card{background:var(--paper);border-radius:2px;max-width:400px;width:100%;padding:40px 32px;box-shadow:0 30px 80px rgba(0,0,0,.3);text-align:center}
+.gate-eyebrow{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:var(--cactus);margin-bottom:12px}
+.gate-card h1{font-size:32px;color:var(--purple);margin-bottom:4px;font-weight:900}
+.gate-sub{font-size:12.5px;color:var(--cactus);margin-bottom:26px}
+.fld{text-align:left;margin-bottom:16px}
+.fld label{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cactus);margin-bottom:6px}
+.fld select,.fld input,.fld textarea{width:100%;font-family:var(--mono);font-size:16px;padding:11px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:2px;outline:none}
+.fld select:focus,.fld input:focus,.fld textarea:focus{border-color:var(--purple)}
+.fld input.pin{letter-spacing:.4em;text-align:center;font-size:22px}
+.gate-btn{margin-top:8px;width:100%;background:var(--purple);color:#fff;border:none;padding:14px;font-size:13px;letter-spacing:.15em;text-transform:uppercase;border-radius:2px;transition:background .2s}
+.gate-btn:hover{background:#6e2049}
+.gate-btn.ghost{background:transparent;color:var(--purple);border:1px solid var(--line);margin-top:10px}
+.gate-err{color:var(--bad);font-size:12.5px;margin-top:14px;min-height:18px}
+.gate-info{color:var(--cactus);font-size:12px;margin-top:12px;min-height:16px}
+.hidden{display:none!important}
+#app{display:none;min-height:100vh}
+header.top{background:var(--purple);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.top h1{font-size:20px;font-weight:900}
+.top .who{font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.9;display:flex;align-items:center;gap:14px}
+.top .who a, .top .who button{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;text-decoration:none}
+nav.tabs{background:var(--purple);border-top:1px solid rgba(255,255,255,.15);padding:0 12px;display:flex;gap:2px;overflow-x:auto}
+nav.tabs button{background:transparent;border:none;color:rgba(255,255,255,.7);padding:12px 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button.active{color:#fff;border-bottom-color:var(--gold)}
+main{max-width:1080px;margin:0 auto;padding:26px 18px 80px}
+.view{display:none}.view.active{display:block}
+.section-eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--cactus);margin:26px 0 10px}
+.ctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+.ctl label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--cactus)}
+select,.ctl input{font-family:var(--mono);font-size:14px;padding:9px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:2px;outline:none}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:3px solid var(--purple);border-radius:2px;padding:15px 16px}
+.kpi .k-lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cactus);margin-bottom:6px}
+.kpi .k-val{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .k-sub{font-size:11px;color:var(--cactus);margin-top:2px}
+.cap-form{background:#fff;border:1px solid var(--line);border-radius:3px;padding:24px;max-width:640px}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.cap-grid .fld{margin-bottom:0}
+.cap-full{grid-column:1/-1}
+.cap-btn{background:var(--purple);color:#fff;border:none;padding:13px 24px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-radius:2px}
+.cap-btn:hover{background:#6e2049}
+.cap-btn.sec{background:var(--blue)}
+.cap-btn.sec:hover{background:#255a5e}
+.aud{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.aud th{background:var(--cactus);color:var(--paper);text-align:left;padding:9px 11px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+.aud td{padding:8px 11px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+.aud tr:hover td{background:#efe9d8}
+.aud td.num{text-align:right}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+.p-pend{background:#f2e6cf;color:var(--warn)}
+.p-aprob{background:#dce7ea;color:var(--blue)}
+.p-pagado{background:#e0efe0;color:var(--ok)}
+.p-rech{background:#f2d6dc;color:var(--bad)}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.mini-btn{border:none;padding:6px 11px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:2px;color:#fff}
+.mini-btn.ok{background:var(--ok)}
+.mini-btn.bad{background:var(--bad)}
+.mini-btn.info{background:var(--blue)}
+.just-input{width:160px;font-family:var(--mono);font-size:12px;padding:6px;border:1px solid var(--line);border-radius:2px;resize:vertical;min-height:34px}
+.loading,.empty{text-align:center;padding:50px 20px;color:var(--cactus);font-size:13px}
+.spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.errbox{background:#f2d6dc;border:1px solid var(--bad);color:var(--bad);padding:14px 16px;border-radius:2px;font-size:13px;margin:20px 0}
+.okmsg{background:#e0efe0;border:1px solid var(--ok);color:var(--ok);padding:10px 14px;border-radius:2px;font-size:13px;margin:12px 0}
+.note{font-size:11.5px;color:var(--cactus);margin-top:18px;font-style:italic}
+@media(max-width:560px){main{padding:20px 12px 70px}.cap-grid{grid-template-columns:1fr}}
+.p-cancel{background:#e6e3da;color:#777}
+.banner{padding:11px 14px;border-radius:2px;font-size:12.5px;margin-bottom:16px;border:1px solid}
+.banner.ok{background:#e0efe0;border-color:var(--ok);color:var(--ok)}
+.banner.warn{background:#f6edd6;border-color:var(--warn);color:#7a5c17}
+.prov-card{background:var(--paper);border:1px dashed var(--line);padding:10px 12px;font-size:12.5px;margin-top:8px;border-radius:2px}
+.linkbtn{background:none;border:none;color:var(--purple);text-decoration:underline;font-size:12.5px;padding:0}
+.seg{display:flex;gap:6px}
+.seg label{flex:1;border:1px solid var(--line);background:#fff;padding:10px;text-align:center;font-size:12px;cursor:pointer;border-radius:2px;text-transform:none;letter-spacing:0;color:var(--ink);margin:0}
+.seg input{display:none}
+.seg input:checked+span{font-weight:600;color:var(--purple)}
+.seg label:has(input:checked){border-color:var(--purple);background:#f7eef3}
+.docs a,.docs span{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:10px;margin:1px 2px 1px 0;text-decoration:none}
+.docs a{background:#dce7ea;color:var(--blue)}
+.docs span.no{background:#f2e6cf;color:var(--warn)}
+.venc{color:var(--bad);font-weight:600}
+.sub{font-size:11px;color:var(--cactus)}
+.selbar{position:sticky;bottom:0;background:var(--ink);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px;border-radius:2px;z-index:5}
+.selbar b{font-size:16px}
+.selbar .cap-btn{margin-left:auto;background:var(--ok)}
+.cards{display:grid;gap:12px}
+.pcard{background:#fff;border:1px solid var(--line);border-left:3px solid var(--blue);padding:14px 16px;border-radius:2px;display:grid;grid-template-columns:1fr auto;gap:8px 16px}
+.pcard.urg{border-left-color:var(--bad)}
+.pcard h3{font-size:17px}
+.pcard .monto{font-size:20px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.pcard .bank{grid-column:1/-1;background:var(--paper);padding:8px 10px;font-size:13px;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.copy{border:1px solid var(--line);background:#fff;font-size:10px;padding:3px 8px;border-radius:2px;text-transform:uppercase;letter-spacing:.06em}
+.mini-btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+#modal{position:fixed;inset:0;background:rgba(32,48,47,.55);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:40px 16px;overflow:auto}
+#modal.open{display:flex}
+#modal .box{background:#fff;max-width:520px;width:100%;padding:24px;border-radius:3px}
+#modal h2{font-size:22px;color:var(--purple);margin-bottom:14px}
+#modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+.ac-wrap{position:relative}
+.ac-list{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--purple);border-top:none;z-index:20;max-height:300px;overflow:auto;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.ac-item{padding:10px 12px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line)}
+.ac-item.on,.ac-item:hover{background:#f7eef3}
+.ac-new{color:var(--purple);font-weight:600}
+.ac-empty{padding:8px 12px;font-size:12px;color:var(--cactus)}
+.monto-wrap{display:flex;gap:6px}.monto-wrap input{flex:1;min-width:0}.monto-wrap select{width:92px}
+.file-in{font-size:13px!important;padding:8px!important;background:var(--paper)!important}
+.mon{font-size:.75em;color:var(--purple);font-weight:600}
+.mon-badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px;vertical-align:middle;white-space:nowrap}
+.mon-MXN{background:#ece6d4;color:#5b5b4c}
+.mon-USD{background:#1e7a3c;color:#fff}
+.mon-EUR{background:#1f4e9c;color:#fff}
+.amt{font-weight:700;white-space:nowrap}.amt-USD{color:#1e7a3c}.amt-EUR{color:#1f4e9c}
+.mon-USD-txt{color:#1e7a3c}.mon-EUR-txt{color:#1f4e9c}
+.mon-bg-USD{background:#eaf5ee!important;border-color:#1e7a3c!important}
+.mon-bg-EUR{background:#e9eef8!important;border-color:#1f4e9c!important}
+.pcard.fx{border-left-width:6px}
+.pay-big{border:2px solid var(--line);padding:14px;border-radius:3px;margin-bottom:12px;text-align:center;background:var(--paper)}
+.pay-amt{font-size:28px;font-weight:700;margin-top:6px}.pay-amt small{font-size:15px}
+.pay-warn{background:#fff3cd;border:1px solid #b5892a;color:#6d4f0f;padding:8px 10px;font-size:13px;border-radius:2px;margin-top:8px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin:4px 0 12px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.mon-seg label{font-size:12px}
+.mon-simb{display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);background:var(--paper);font-weight:700}
+.monto-wrap.mon-bd-USD .mon-simb,.monto-wrap.mon-bd-USD input{border-color:#1e7a3c;border-width:2px}
+.monto-wrap.mon-bd-EUR .mon-simb,.monto-wrap.mon-bd-EUR input{border-color:#1f4e9c;border-width:2px}
+.tabla-mini{font-size:12.5px;border-collapse:collapse;width:100%;max-width:520px}
+.tabla-mini td{padding:5px 8px;border-bottom:1px solid var(--line)}
+.tabla-mini td.num{text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:700px){.hide-sm{display:none}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-eyebrow">Puerto Escondido · Oaxaca</div>
+    <h1>Casa Yuma</h1>
+    <div class="gate-sub">Pagos a Proveedores</div>
+    <div id="step1">
+      <div class="fld"><label>Colaborador</label><select id="userSel"></select></div>
+      <div class="fld"><label>Número de colaborador</label><input id="userId" type="text" placeholder="CY000" autocomplete="off"></div>
+      <button class="gate-btn" onclick="identificar()">Continuar</button>
+    </div>
+    <div id="step2" class="hidden">
+      <div class="fld"><label id="pinLabel">Tu PIN</label><input id="pinInput" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off"></div>
+      <div id="pinInput2wrap" class="fld hidden"><label>Confirma tu PIN</label><input id="pinInput2" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off"></div>
+      <button class="gate-btn" id="pinBtn" onclick="pinSubmit()">Entrar</button>
+      <button class="gate-btn ghost" onclick="volverStep1()">← Cambiar colaborador</button>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-info" id="gateInfo"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <h1>Casa Yuma · Pagos a Proveedores</h1>
+    <div class="who"><span id="whoLabel"></span><a href="index.html">Portal</a><button onclick="logout()">Salir</button></div>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button data-view="concentrado" data-rol="ve">Concentrado</button>
+    <button data-view="porpagar" data-rol="paga">Por pagar</button>
+    <button data-view="nueva">Nueva solicitud</button>
+    <button data-view="mias">Mis solicitudes</button>
+    <button data-view="historial" data-rol="ve">Historial</button>
+    <button data-view="proveedores">Proveedores</button>
+  </nav>
+  <main>
+    <section class="view" id="v-concentrado"><div id="concentradoBody"></div></section>
+    <section class="view" id="v-porpagar"><div id="porpagarBody"></div></section>
+    <section class="view" id="v-nueva"><div id="nuevaBody"></div></section>
+    <section class="view" id="v-mias"><div id="miasBody"></div></section>
+    <section class="view" id="v-historial">
+      <div class="ctl">
+        <label>Desde</label><input id="hDesde" type="date">
+        <label>Hasta</label><input id="hHasta" type="date">
+        <select id="hEstatus"><option value="">Todo estatus</option><option>Pendiente</option><option>Autorizado</option><option>Pagado</option><option>Rechazado</option><option>Cancelado</option></select>
+        <select id="hDepto"><option value="">Todos los deptos.</option></select>
+        <input id="hTexto" placeholder="Proveedor o concepto" style="width:170px">
+        <button class="cap-btn" style="padding:9px 16px" onclick="renderHistorial()">Ver</button>
+        <button class="cap-btn sec" style="padding:9px 16px" onclick="pdfHistorial()">PDF</button>
+        <button class="cap-btn sec" style="padding:9px 16px" onclick="csvHistorial()">Excel</button>
+      </div>
+      <div id="historialKpis"></div>
+      <div id="historialBody"></div>
+    </section>
+    <section class="view" id="v-proveedores"><div id="proveedoresBody"></div></section>
+  </main>
+</div>
+
+<div id="modal" onclick="if(event.target===this)cerrarModal()"><div class="box" id="modalBox"></div></div>
+
+<script>
+// ————— El directorio de colaboradores YA NO se copia aquí a mano —————
+// El selector de nombres del login (#userSel) se llena en vivo desde la pestaña "Usuarios"
+// del Sheet (acción pública 'listar_colaboradores' en Codigo.gs).
+//
+// ROLES EN PAGOS (nov-2026):
+//  · Líder           → solicita (sáb 00:00 – mié 12:00) y ve solo lo suyo.
+//  · Dirección       → nivel 'superfull'. ÚNICO que autoriza/rechaza (pestaña Concentrado).
+//  · Administración  → RolEspecial 'administracion' (col G de Usuarios). Ve todo y registra pagos.
+//  · Full            → ve todo; puede registrar pagos como respaldo de Administración. No autoriza.
+const CONFIG={
+  WEBAPP_URL:'https://script.google.com/macros/s/AKfycbwaQK50qEOFGvYxoy3wpS17uPzru1BQAs0TYwnEeD50M1fe3UfNWqcy1AwN1wDOlqM/exec',
+};
+const MONEDAS=['MXN','USD','EUR'];
+const FORMAS_PAGO=['Transferencia','Efectivo','Cheque','Tarjeta'];
+const ESTATUS_PILL={Pendiente:'p-pend',Autorizado:'p-aprob',Pagado:'p-pagado',Rechazado:'p-rech',Cancelado:'p-cancel'};
+// Índices de columna de la hoja Pagos (ver Codigo.gs)
+const C={id:0,fSol:1,solId:2,solNom:3,prov:4,cat:5,concepto:6,monto:7,mon:8,forma:9,fReq:10,factura:11,liga:12,urg:13,est:14,autPor:15,fAut:16,motivo:17,fPago:18,ref:19,notas:20,depto:21,provId:22,rfc:23,clabe:24,banco:25,cot:26,comp:27,pagPor:28};
+
+const money=n=>(isNaN(n)||n===''||n==null)?'–':Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{const x=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(x)?0:x;};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Texto seguro dentro de onclick="…" (IDs como MZ:D'AMICO)
+const jsq=s=>esc(JSON.stringify(String(s==null?'':s)));
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+// Fecha/hora en Puerto Escondido (no UTC — antes después de las 6 pm salía la fecha de mañana)
+function hoyMX(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City'}).format(new Date());}
+function addDias(f,n){const d=new Date(f+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function ventanaAbiertaMX(){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Mexico_City',weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date());
+  const dia=p.find(x=>x.type==='weekday').value, hora=Number(p.find(x=>x.type==='hour').value);
+  if(['Sat','Sun','Mon','Tue'].indexOf(dia)!==-1)return true;
+  return dia==='Wed' && hora<12;
+}
+
+let SESSION=null,PENDING=null,PAGOS=[],PROVEEDORES_CACHE=[],EDITANDO=null,SEL={};
+const NIVELES_VALIDOS=['superfull','full','lider'];
+function esDireccion(){ return SESSION && SESSION.nivel==='superfull'; }
+function esAdmin(){ return SESSION && norm(SESSION.rolEspecial)==='administracion'; }
+function puedePagar(){ return esAdmin() || (SESSION && SESSION.nivel==='full'); }
+function veTodo(){ return SESSION && (SESSION.nivel==='superfull'||SESSION.nivel==='full'||esAdmin()); }
+function editaProveedores(){ return veTodo(); }
+function rolLabel(){
+  if(esDireccion())return 'Dirección';
+  if(esAdmin())return 'Administración';
+  if(SESSION.nivel==='full')return 'Full';
+  return 'Líder'+(SESSION.rolEspecial==='compras'?' Compras':'');
+}
+
+(function(){
+  const sel=document.getElementById('userSel');
+  sel.innerHTML='<option value="">Cargando…</option>';
+  apiGet({accion:'listar_colaboradores'}).then(j=>{
+    if(!j || !j.ok || !j.usuarios || !j.usuarios.length){ sel.innerHTML='<option value="">— escribe tu número abajo —</option>'; return; }
+    sel.innerHTML='';
+    j.usuarios.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nombre;sel.appendChild(o);});
+    sel.onchange=()=>{document.getElementById('userId').value=sel.value;};
+    document.getElementById('userId').value=sel.value;
+  }).catch(()=>{ sel.innerHTML='<option value="">— escribe tu número abajo —</option>'; });
+})();
+
+async function apiGet(params){params=Object.assign({},params,{_ts:Date.now()});const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');const res=await fetch(CONFIG.WEBAPP_URL+'?'+qs,{cache:'no-store'});return res.json();}
+async function apiPost(body){const res=await fetch(CONFIG.WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json();}
+function api(accion,extra){return apiPost(Object.assign({accion,id:SESSION.id,pin:SESSION.pin},extra||{}));}
+
+(async function tryAutoLogin(){
+  try{
+    const raw=sessionStorage.getItem('CY_FIN_SESSION');
+    if(!raw)return;
+    const s=JSON.parse(raw);
+    const j=await apiGet({accion:'entrar',id:s.id,pin:s.pin});
+    if(j.ok){
+      const nivel=j.nivel||s.nivel;
+      if(NIVELES_VALIDOS.indexOf(nivel)===-1){return;}
+      SESSION={id:s.id,pin:s.pin,nombre:j.nombre||s.nombre,nivel:nivel,rolEspecial:j.rolEspecial||'',departamento:j.departamento||''};
+      entrarApp();
+    }
+  }catch(e){}
+})();
+
+async function identificar(){
+  const id=document.getElementById('userId').value.trim().toUpperCase();
+  const err=document.getElementById('gateErr'),info=document.getElementById('gateInfo');
+  err.textContent='';info.textContent='Verificando…';
+  try{
+    const j=await apiGet({accion:'login',id:id});
+    if(!j.ok){info.textContent='';err.textContent=j.error;return;}
+    PENDING={id:j.id,nombre:j.nombre,nivel:j.nivel,rolEspecial:j.rolEspecial,departamento:j.departamento,tienePin:j.tienePin};info.textContent='';
+    document.getElementById('step1').classList.add('hidden');document.getElementById('step2').classList.remove('hidden');
+    if(j.tienePin){document.getElementById('pinLabel').textContent='Tu PIN · '+j.nombre.split(' ')[0];document.getElementById('pinInput2wrap').classList.add('hidden');document.getElementById('pinBtn').textContent='Entrar';}
+    else{document.getElementById('pinLabel').textContent='Crea tu PIN · '+j.nombre.split(' ')[0];document.getElementById('pinInput2wrap').classList.remove('hidden');document.getElementById('pinBtn').textContent='Crear PIN y entrar';info.textContent='Primera vez: define un PIN de 4 a 6 dígitos.';}
+    document.getElementById('pinInput').focus();
+  }catch(e){info.textContent='';err.textContent='No se pudo conectar. Revisa CONFIG.WEBAPP_URL.';}
+}
+function volverStep1(){document.getElementById('step2').classList.add('hidden');document.getElementById('step1').classList.remove('hidden');document.getElementById('gateErr').textContent='';document.getElementById('gateInfo').textContent='';document.getElementById('pinInput').value='';document.getElementById('pinInput2').value='';}
+async function pinSubmit(){
+  const pin=document.getElementById('pinInput').value.trim();const err=document.getElementById('gateErr');err.textContent='';
+  if(!/^\d{4,6}$/.test(pin)){err.textContent='El PIN debe ser de 4 a 6 dígitos.';return;}
+  try{
+    let j;
+    if(PENDING.tienePin){j=await apiGet({accion:'entrar',id:PENDING.id,pin:pin});}
+    else{const pin2=document.getElementById('pinInput2').value.trim();if(pin!==pin2){err.textContent='Los PIN no coinciden.';return;}j=await apiPost({accion:'crearPin',id:PENDING.id,pin:pin});}
+    if(!j.ok){err.textContent=j.error;return;}
+    const nivel=j.nivel||PENDING.nivel;
+    if(NIVELES_VALIDOS.indexOf(nivel)===-1){err.textContent='Tu usuario no tiene acceso a Pagos.';return;}
+    SESSION={id:PENDING.id,pin:pin,nombre:j.nombre||PENDING.nombre,nivel:nivel,rolEspecial:j.rolEspecial||PENDING.rolEspecial||'',departamento:j.departamento||PENDING.departamento||''};entrarApp();
+  }catch(e){err.textContent='No se pudo conectar.';}
+}
+document.getElementById('pinInput').addEventListener('keydown',e=>{if(e.key==='Enter')pinSubmit();});
+document.getElementById('pinInput2').addEventListener('keydown',e=>{if(e.key==='Enter')pinSubmit();});
+document.getElementById('userId').addEventListener('keydown',e=>{if(e.key==='Enter')identificar();});
+
+function entrarApp(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('whoLabel').textContent=SESSION.nombre+' · '+rolLabel();
+  try{sessionStorage.setItem('CY_FIN_SESSION',JSON.stringify(SESSION));}catch(e){}
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    const r=b.dataset.rol;
+    if((r==='ve' && !veTodo()) || (r==='paga' && !puedePagar() && !esDireccion())) b.classList.add('hidden');
+    b.onclick=()=>switchView(b.dataset.view);
+  });
+  document.getElementById('hDesde').value=addDias(hoyMX(),-30);
+  document.getElementById('hHasta').value=hoyMX();
+  // Pestaña inicial según rol: Dirección → Concentrado, Administración → Por pagar, Líder → Nueva
+  switchView(esDireccion()?'concentrado':(puedePagar()?'porpagar':'nueva'));
+  cargarTodo();
+}
+function logout(){try{sessionStorage.removeItem('CY_FIN_SESSION');}catch(e){}location.reload();}
+function switchView(id){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='v-'+id));
+}
+const LOADING='<div class="loading"><div class="spinner"></div>Cargando…</div>';
+
+async function cargarTodo(){
+  ['concentradoBody','porpagarBody','miasBody','historialBody','proveedoresBody','nuevaBody'].forEach(i=>{document.getElementById(i).innerHTML=LOADING;});
+  // La captura espera a tener proveedores (Matriz) y categorías; los pagos cargan en paralelo.
+  await Promise.all([cargarPagos(),Promise.all([cargarProveedores(),cargarCats()]).then(()=>{
+    // Si algo falla al dibujar, mostrar el error en vez de dejar la pantalla congelada.
+    try{renderNueva();applyPrefillFromURL();}
+    catch(e){document.getElementById('nuevaBody').innerHTML=`<div class="errbox">No se pudo mostrar el formulario: ${esc(e.message)}. Recarga la página (Ctrl+Shift+R).</div>`;}
+    revisarVersion();
+  })]);
+}
+async function cargarPagos(){
+  try{
+    const j=await apiGet({accion:'pagos_list',id:SESSION.id,pin:SESSION.pin});
+    if(!j.ok)throw new Error(j.error);
+    PAGOS=j.filas||[];
+  }catch(e){
+    ['concentradoBody','porpagarBody','miasBody','historialBody'].forEach(i=>{document.getElementById(i).innerHTML=`<div class="errbox">${esc(e.message||'No se pudo cargar.')}</div>`;});
+    return;
+  }
+  const deptos=[...new Set(PAGOS.map(r=>r[C.depto]).filter(Boolean))].sort();
+  const hd=document.getElementById('hDepto'),cur=hd.value;
+  hd.innerHTML='<option value="">Todos los deptos.</option>'+deptos.map(d=>`<option${d===cur?' selected':''}>${esc(d)}</option>`).join('');
+  if(veTodo()){renderConcentrado();renderHistorial();}
+  if(puedePagar()||esDireccion())renderPorPagar();
+  renderMias();
+}
+
+// ————— Utilidades de render —————
+function pill(e){return `<span class="pill ${ESTATUS_PILL[e]||'p-pend'}">${esc(e)}</span>`;}
+function link(u,t){return u?`<a href="${esc(u)}" target="_blank" rel="noopener">${t}</a>`:'';}
+function docs(r){
+  return `<div class="docs">${r[C.cot]?link(r[C.cot],'Cotización'):'<span class="no">Sin cotización</span>'}${(r[C.factura]||r[C.liga])?(r[C.liga]?link(r[C.liga],'Factura '+esc(r[C.factura])):'<a>Factura '+esc(r[C.factura])+'</a>'):'<span class="no">Factura pendiente</span>'}${r[C.comp]?link(r[C.comp],'Comprobante'):''}</div>`;
+}
+function fReqHtml(f){
+  if(!f)return '–';
+  const h=hoyMX(); const cls=f<h?'venc':(f<=addDias(h,2)?'venc':'');
+  return `<span class="${cls}">${esc(f)}</span>`;
+}
+function ctaLbl(c){return /^(\d{18}|\d{16})$/.test(String(c))?(String(c).length===16?'Tarjeta':'CLABE'):'Cuenta';}
+function clabeTxt(r){return r[C.forma]==='Transferencia'&&r[C.clabe]?`${ctaLbl(r[C.clabe])} ${esc(r[C.clabe])}${r[C.banco]?' · '+esc(r[C.banco]):''}`:esc(r[C.forma]);}
+function kpi(lbl,val,sub){return `<div class="kpi"><div class="k-lbl">${lbl}</div><div class="k-val">${val}</div>${sub?`<div class="k-sub">${sub}</div>`:''}</div>`;}
+function suma(arr){return arr.reduce((a,r)=>a+num(r[C.monto]),0);}
+// Montos con moneda: nunca se suman pesos con dólares/euros; se muestran por separado.
+function monDe(r){return r[C.mon]||'MXN';}
+const MON_NOMBRE={MXN:'PESOS',USD:'DÓLARES',EUR:'EUROS'};
+const MON_SIMB={MXN:'$',USD:'US$',EUR:'€'};
+function monBadge(m){return `<span class="mon-badge mon-${m}">${m}${m!=='MXN'?' · '+MON_NOMBRE[m]:''}</span>`;}
+// Siempre con su moneda: pesos en sobrio, dólares/euros con etiqueta de color imposible de pasar por alto.
+function fmtR(r){const m=monDe(r);return `<span class="amt amt-${m}">${MON_SIMB[m]||'$'}${money(r[C.monto])}</span> ${monBadge(m)}`;}
+function sumaTxt(arr){
+  const t={};arr.forEach(r=>{const m=monDe(r);t[m]=(t[m]||0)+num(r[C.monto]);});
+  const ks=Object.keys(t).sort((a,b)=>a==='MXN'?-1:b==='MXN'?1:a.localeCompare(b));
+  if(!ks.length)return '$0.00';
+  return ks.map(m=>`<span class="amt amt-${m}">${MON_SIMB[m]||'$'}${money(t[m])}</span> ${monBadge(m)}`).join('<br>');
+}
+
+// ————— Concentrado (Dirección autoriza; Admin/Full solo ven) —————
+let CONC_DEPTO='';
+function renderConcentrado(){
+  const el=document.getElementById('concentradoBody');
+  const pend=PAGOS.filter(r=>r[C.est]==='Pendiente');
+  const aut=PAGOS.filter(r=>r[C.est]==='Autorizado');
+  const mes=hoyMX().slice(0,7);
+  const pagMes=PAGOS.filter(r=>r[C.est]==='Pagado'&&String(r[C.fPago]).slice(0,7)===mes);
+  const urg=pend.filter(r=>r[C.urg]==='Urgente');
+  const deptos=[...new Set(pend.map(r=>r[C.depto]||'—'))].sort();
+  const vis=pend.filter(r=>!CONC_DEPTO||(r[C.depto]||'—')===CONC_DEPTO)
+    .sort((a,b)=>(a[C.urg]==='Urgente'?0:1)-(b[C.urg]==='Urgente'?0:1)||String(a[C.fReq]||'9').localeCompare(String(b[C.fReq]||'9')));
+  Object.keys(SEL).forEach(k=>{if(!pend.find(r=>r[C.id]===k))delete SEL[k];});
+  const dir=esDireccion();
+  let html=`<div class="kpis">
+    ${kpi('Por autorizar',sumaTxt(pend),pend.length+' solicitud(es)')}
+    ${kpi('Urgentes',sumaTxt(urg),urg.length+' solicitud(es)')}
+    ${kpi('Autorizado por pagar',sumaTxt(aut),aut.length+' en Administración')}
+    ${kpi('Pagado este mes',sumaTxt(pagMes),pagMes.length+' pago(s)')}
+  </div>`;
+  if(!pend.length){
+    html+='<div class="empty">No hay solicitudes por autorizar. 🎉</div>';
+  }else{
+    html+=`<div class="ctl"><label>Departamento</label><select onchange="CONC_DEPTO=this.value;renderConcentrado()"><option value="">Todos (${pend.length})</option>${deptos.map(d=>{const n=pend.filter(r=>(r[C.depto]||'—')===d);return `<option value="${esc(d)}"${d===CONC_DEPTO?' selected':''}>${esc(d)} · ${n.length} · ${sumaTxt(n).replace(/<br>/g,' + ').replace(/<[^>]+>/g,'')}</option>`;}).join('')}</select>
+      ${dir?'':'<span class="sub">Solo Dirección autoriza. Vista de consulta.</span>'}</div>
+    <div style="overflow-x:auto"><table class="aud"><thead><tr>
+      ${dir?`<th><input type="checkbox" onchange="selTodos(this.checked)" ${vis.length&&vis.every(r=>SEL[r[C.id]])?'checked':''}></th>`:''}
+      <th>Requerido</th><th>Proveedor</th><th>Concepto</th><th class="hide-sm">Depto · solicitó</th><th>Docs</th><th>Monto</th>${dir?'<th></th>':''}
+    </tr></thead><tbody>${vis.map(r=>`<tr>
+      ${dir?`<td><input type="checkbox" ${SEL[r[C.id]]?'checked':''} onchange="selUno('${esc(r[C.id])}',this.checked)"></td>`:''}
+      <td>${fReqHtml(r[C.fReq])}${r[C.urg]==='Urgente'?'<br><span class="pill p-rech">Urgente</span>':''}</td>
+      <td><b>${esc(r[C.prov])}</b><div class="sub">${r[C.rfc]?'RFC '+esc(r[C.rfc]):'Sin RFC'} · ${clabeTxt(r)}</div></td>
+      <td>${esc(r[C.concepto])}<div class="sub">${esc(r[C.id])} · ${esc(r[C.cat])}</div>${r[C.notas]?`<div class="sub">“${esc(r[C.notas])}”</div>`:''}</td>
+      <td class="hide-sm">${esc(r[C.depto]||'—')}<div class="sub">${esc(r[C.solNom])} · ${esc(r[C.fSol])}</div></td>
+      <td>${docs(r)}</td>
+      <td class="num"><b>${fmtR(r)}</b></td>
+      ${dir?`<td><div class="row-actions"><button class="mini-btn ok" onclick="autorizar(['${esc(r[C.id])}'])">Autorizar</button><button class="mini-btn bad" onclick="modalRechazo('${esc(r[C.id])}')">Rechazar</button></div></td>`:''}
+    </tr>`).join('')}</tbody></table></div>`;
+    if(dir){
+      const ids=Object.keys(SEL);const sel=pend.filter(r=>SEL[r[C.id]]);
+      html+=`<div class="selbar ${ids.length?'':'hidden'}"><span>${ids.length} seleccionada(s)</span><b>${sumaTxt(sel)}</b><button class="cap-btn" onclick="autorizar(Object.keys(SEL))">Autorizar seleccionadas</button></div>`;
+    }
+  }
+  if(aut.length){
+    html+=`<div class="section-eyebrow">Autorizado · esperando pago de Administración (${aut.length})</div>
+      <table class="tabla-mini">${aut.sort((a,b)=>String(a[C.fReq]).localeCompare(String(b[C.fReq]))).map(r=>`<tr><td>${esc(r[C.id])}</td><td>${esc(r[C.prov])}</td><td>${fReqHtml(r[C.fReq])}</td><td class="num">${fmtR(r)}</td></tr>`).join('')}</table>`;
+  }
+  el.innerHTML=html;
+}
+function selUno(id,on){if(on)SEL[id]=1;else delete SEL[id];renderConcentrado();}
+function selTodos(on){PAGOS.filter(r=>r[C.est]==='Pendiente'&&(!CONC_DEPTO||(r[C.depto]||'—')===CONC_DEPTO)).forEach(r=>{if(on)SEL[r[C.id]]=1;else delete SEL[r[C.id]];});renderConcentrado();}
+async function autorizar(ids){
+  const filas=PAGOS.filter(r=>ids.indexOf(r[C.id])!==-1);
+  if(!filas.length)return;
+  if(!confirm(`¿Autorizar ${filas.length} pago(s) por ${sumaTxt(filas).replace(/<[^>]+>/g,'')}?`))return;
+  try{
+    const j=await api('pagos_autorizar',{idPagos:ids,accionEstatus:'autorizar'});
+    if(!j.ok){alert(j.error);return;}
+    SEL={};
+    if(j.omitidos)alert(j.omitidos+' ya no estaban pendientes y se omitieron.');
+    cargarPagos();
+  }catch(e){alert('No se pudo procesar.');}
+}
+function modalRechazo(id){
+  const r=PAGOS.find(x=>x[C.id]===id);
+  abrirModal(`<h2>Rechazar ${esc(id)}</h2><p class="sub" style="margin-bottom:12px">${esc(r[C.prov])} · ${fmtR(r)}</p>
+    <div class="fld"><label>Motivo (lo verá quien solicitó)</label><textarea id="mMotivo" rows="3"></textarea></div>
+    <div id="mMsg"></div><div class="acts"><button class="mini-btn ghost" onclick="cerrarModal()">Cancelar</button><button class="cap-btn" style="background:var(--bad)" onclick="rechazar('${esc(id)}')">Rechazar</button></div>`);
+  document.getElementById('mMotivo').focus();
+}
+async function rechazar(id){
+  const motivo=document.getElementById('mMotivo').value.trim();
+  if(!motivo){modalErr('Escribe un motivo.');return;}
+  const j=await api('pagos_autorizar',{idPagos:[id],accionEstatus:'rechazar',motivo}).catch(()=>({ok:false,error:'No se pudo procesar.'}));
+  if(!j.ok){modalErr(j.error);return;}
+  cerrarModal();cargarPagos();
+}
+
+// ————— Por pagar (Administración) —————
+function renderPorPagar(){
+  const el=document.getElementById('porpagarBody');
+  const aut=PAGOS.filter(r=>r[C.est]==='Autorizado').sort((a,b)=>(a[C.urg]==='Urgente'?0:1)-(b[C.urg]==='Urgente'?0:1)||String(a[C.fReq]||'9').localeCompare(String(b[C.fReq]||'9')));
+  const sinFact=PAGOS.filter(r=>r[C.est]==='Pagado'&&!r[C.factura]&&!r[C.liga]);
+  const paga=puedePagar();
+  let html=`<div class="kpis">${kpi('Por pagar',sumaTxt(aut),aut.length+' autorizado(s)')}${kpi('Efectivo a preparar',sumaTxt(aut.filter(r=>r[C.forma]==='Efectivo')))}${kpi('Pagados sin factura',sinFact.length,sumaTxt(sinFact))}</div>`;
+  if(!aut.length)html+='<div class="empty">Nada autorizado pendiente de pago.</div>';
+  else html+=`<div class="cards">${aut.map(r=>`<div class="pcard ${r[C.urg]==='Urgente'?'urg':''} ${monDe(r)!=='MXN'?'fx mon-bg-'+monDe(r):''}">
+      <div><h3>${esc(r[C.prov])}</h3><div class="sub">${esc(r[C.id])} · ${esc(r[C.concepto])} · ${esc(r[C.depto]||'')} · solicitó ${esc(r[C.solNom])}</div>
+      <div class="sub">Requerido ${fReqHtml(r[C.fReq])} ${r[C.urg]==='Urgente'?'· <b class="venc">URGENTE</b>':''} · autorizó ${esc(r[C.autPor])}</div>${docs(r)}</div>
+      <div class="monto">${fmtR(r)}<div class="sub" style="text-align:right">${esc(r[C.forma])}</div></div>
+      ${monDe(r)!=='MXN'?`<div class="pay-warn" style="grid-column:1/-1">⚠ Pagar en <b>${MON_NOMBRE[monDe(r)]} (${monDe(r)})</b> — no en pesos</div>`:''}
+      <div class="bank">${r[C.forma]==='Transferencia'?`<span>${ctaLbl(r[C.clabe])} <b>${esc(r[C.clabe])}</b> <button class="copy" onclick="copiar('${esc(r[C.clabe])}',this)">Copiar</button></span><span>${esc(r[C.banco]||'Banco no indicado')}</span>`:`<span>Pago en ${esc(r[C.forma]).toLowerCase()}</span>`}<span>${r[C.rfc]?'RFC '+esc(r[C.rfc]):'Sin RFC'}</span>
+      ${paga?`<button class="mini-btn ok" style="margin-left:auto" onclick="modalPagar('${esc(r[C.id])}')">Registrar pago</button>`:''}</div>
+    </div>`).join('')}</div>`;
+  if(sinFact.length)html+=`<div class="section-eyebrow">Pagados · falta factura (${sinFact.length})</div>
+    <table class="tabla-mini">${sinFact.map(r=>`<tr><td>${esc(r[C.id])}</td><td>${esc(r[C.prov])}</td><td>${esc(r[C.solNom])}</td><td class="num">${fmtR(r)}</td><td><button class="linkbtn" onclick="modalFactura('${esc(r[C.id])}')">+ Factura</button></td></tr>`).join('')}</table>`;
+  el.innerHTML=html;
+}
+function copiar(t,btn){navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='Copiar',1200);});}
+// ————— Archivos: se leen en el navegador y viajan al servidor, que los guarda en Drive —————
+// Fotos grandes se reducen (1600 px, JPEG) para que suban rápido desde el celular.
+const MAX_MB=10;
+function leerArchivo(inputId, tipo){
+  const inp=document.getElementById(inputId);
+  const f=inp&&inp.files&&inp.files[0];
+  if(!f)return Promise.resolve(null);
+  return new Promise((ok,mal)=>{
+    const fin=(blob,nombre)=>{
+      if(blob.size>MAX_MB*1024*1024){mal(new Error(f.name+' pesa más de '+MAX_MB+' MB.'));return;}
+      const fr=new FileReader();
+      fr.onload=()=>ok({tipo,nombre:nombre||f.name,mime:blob.type||'application/octet-stream',data:String(fr.result).split(',')[1]});
+      fr.onerror=()=>mal(new Error('No se pudo leer '+f.name));
+      fr.readAsDataURL(blob);
+    };
+    if(/^image\/(jpeg|png|webp|heic)/i.test(f.type) && f.size>1.5*1024*1024){
+      const img=new Image(),url=URL.createObjectURL(f);
+      img.onload=()=>{const k=Math.min(1,1600/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+        c.toBlob(b=>fin(b||f,f.name.replace(/\.\w+$/,'')+'.jpg'),'image/jpeg',0.82);};
+      img.onerror=()=>{URL.revokeObjectURL(url);fin(f);};
+      img.src=url;
+    }else fin(f);
+  });
+}
+async function leerArchivos(pares){const out=[];for(const [id,tipo] of pares){const a=await leerArchivo(id,tipo);if(a)out.push(a);}return out;}
+function campoArchivo(id,label,actual,accept){
+  return `<div class="fld"><label>${label}</label><input id="${id}" type="file" accept="${accept||'application/pdf,image/*,.xml'}" class="file-in">${actual?`<div class="sub" style="margin-top:4px">Ya adjunta: ${link(actual,'ver archivo')} · elige otro solo si quieres reemplazarla</div>`:''}</div>`;
+}
+
+function modalPagar(id){
+  const r=PAGOS.find(x=>x[C.id]===id);
+  const m=monDe(r);
+  abrirModal(`<h2>Registrar pago ${esc(id)}</h2>
+    <div class="pay-big mon-bg-${m}"><div>${monBadge(m)}</div><div class="pay-amt">${MON_SIMB[m]}${money(r[C.monto])} <small>${m}</small></div>
+      ${m!=='MXN'?`<div class="pay-warn">⚠ Este pago es en <b>${MON_NOMBRE[m]}</b>, no en pesos. No conviertas el monto.</div>`:''}</div>
+    <p class="sub" style="margin-bottom:12px">${esc(r[C.prov])} · ${clabeTxt(r)}</p>
+    ${m!=='MXN'?`<label class="chk"><input type="checkbox" id="mMonOk"> Confirmo que pagué <b>${MON_SIMB[m]}${money(r[C.monto])} ${m}</b> (${MON_NOMBRE[m]})</label>`:''}
+    <div class="fld"><label>Fecha de pago</label><input id="mFecha" type="date" value="${hoyMX()}"></div>
+    <div class="fld"><label>Referencia / folio de transferencia</label><input id="mRef" placeholder="Ej. 0123456"></div>
+    ${campoArchivo('mCompFile','Comprobante de pago (PDF o foto)')}
+    <p class="sub" style="margin-bottom:10px">Llena al menos la referencia o adjunta el comprobante.</p>
+    <div id="mMsg"></div><div class="acts"><button class="mini-btn ghost" onclick="cerrarModal()">Cancelar</button><button class="cap-btn" onclick="pagar('${esc(id)}')">Marcar pagado</button></div>`);
+}
+async function pagar(id){
+  try{
+    const chk=document.getElementById('mMonOk');
+    if(chk&&!chk.checked){modalErr('Confirma la moneda del pago antes de guardar.');return;}
+    const archivos=await leerArchivos([['mCompFile','comprobante']]);
+    const body={idPago:id,fechaPago:val('mFecha'),referenciaPago:val('mRef'),archivos};
+    if(!body.referenciaPago&&!archivos.length){modalErr('Escribe la referencia o adjunta el comprobante.');return;}
+    document.getElementById('mMsg').innerHTML='<div class="okmsg">Guardando'+(archivos.length?' y subiendo comprobante':'')+'…</div>';
+    const j=await api('pagos_pagar',body);
+    if(!j.ok){modalErr(j.error);return;}
+    cerrarModal();cargarPagos();
+  }catch(e){modalErr(e.message||'No se pudo procesar.');}
+}
+function modalFactura(id){
+  const r=PAGOS.find(x=>x[C.id]===id);
+  abrirModal(`<h2>Factura de ${esc(id)}</h2><p class="sub" style="margin-bottom:12px">${esc(r[C.prov])} · ${fmtR(r)}</p>
+    <div class="fld"><label>Folio / UUID CFDI</label><input id="mFact" value="${esc(r[C.factura])}"></div>
+    ${campoArchivo('mFactFile','Factura (PDF, XML o foto)',r[C.liga])}
+    <div id="mMsg"></div><div class="acts"><button class="mini-btn ghost" onclick="cerrarModal()">Cancelar</button><button class="cap-btn" onclick="guardarFactura('${esc(id)}')">Guardar</button></div>`);
+}
+async function guardarFactura(id){
+  try{
+    const archivos=await leerArchivos([['mFactFile','factura']]);
+    if(!val('mFact')&&!archivos.length){modalErr('Escribe el folio o adjunta la factura.');return;}
+    document.getElementById('mMsg').innerHTML='<div class="okmsg">Guardando…</div>';
+    const j=await api('pagos_factura',{idPago:id,factura:val('mFact'),archivos});
+    if(!j.ok){modalErr(j.error);return;}
+    cerrarModal();cargarPagos();
+  }catch(e){modalErr(e.message||'No se pudo guardar.');}
+}
+
+// ————— Nueva solicitud / editar —————
+// Departamento = el de la sesión (Usuarios). Solo quien no tiene depto (Dirección/Full) lo elige.
+// Categorías = pestaña "Listas" de la Matriz según el depto; si no hay lista, la general.
+let PROV_SEL='';
+function deptoActual(){return SESSION.departamento||val('pDepto')||'';}
+function catsPara(depto){
+  if(!CATS)return ['OTROS'];
+  return (CATS.porDepto&&CATS.porDepto[norm(depto)])||CATS.general||['OTROS'];
+}
+function opcionesCat(depto,sel){
+  const l=catsPara(depto).slice();if(sel&&l.indexOf(sel)===-1)l.unshift(sel);
+  return l.map(c=>`<option${c===sel?' selected':''}>${esc(c)}</option>`).join('');
+}
+function renderNueva(){
+  const r=EDITANDO;
+  const ab=ventanaAbiertaMX()||esDireccion()||(CATS&&CATS.sinVentana);
+  const v=(k,d)=>r?esc(r[C[k]]):(d||'');
+  PROV_SEL=r?String(r[C.provId]||''):'';
+  const deptoFijo=SESSION.departamento;
+  const deptoIni=r?(r[C.depto]||deptoFijo||''):(deptoFijo||'');
+  const mon=r?(r[C.mon]||'MXN'):'MXN';
+  document.getElementById('nuevaBody').innerHTML=`
+    <div class="section-eyebrow">${r?'Editar solicitud '+esc(r[C.id]):'Nueva solicitud de pago'}</div>
+    ${r?'':(ab?`<div class="banner ok">Recepción de solicitudes abierta · de sábado 00:00 a miércoles 12:00 pm.</div>`:`<div class="banner warn">Fuera de horario. Las solicitudes se reciben de <b>sábado (00:00) a miércoles 12:00 pm</b>. Puedes llenarla, pero no se enviará hasta que abra la ventana.</div>`)}
+    <div class="cap-form">
+      <div class="cap-grid">
+        <div class="fld cap-full"><label>Proveedor</label>
+          <div class="ac-wrap"><input id="pProveedor" placeholder="Nombre, razón social o RFC…" value="${v('prov')}" oninput="PROV_SEL='';onProveedor(true)" onfocus="mostrarSug()" onblur="setTimeout(ocultarSug,180)" onkeydown="teclaSug(event)" autocomplete="off">
+          <div id="provSug" class="ac-list hidden"></div></div>
+          <div id="provInfo"></div>
+        </div>
+        <div class="fld"><label>Departamento</label>${deptoFijo?`<input value="${esc(deptoFijo)}" disabled>`:
+          `<select id="pDepto" onchange="document.getElementById('pCategoria').innerHTML=opcionesCat(this.value)"><option value="">— Elige —</option>${(CATS?CATS.deptos:[]).map(d=>`<option${d===deptoIni?' selected':''}>${esc(d)}</option>`).join('')}</select>`}</div>
+        <div class="fld"><label>Categoría</label><select id="pCategoria">${opcionesCat(deptoIni,r?r[C.cat]:'')}</select></div>
+        <div class="fld cap-full"><label>Concepto</label><input id="pConcepto" placeholder="Ej. Reparación de bomba de alberca" value="${v('concepto')}"></div>
+        <div class="fld cap-full"><label>Moneda</label><div class="seg mon-seg">${MONEDAS.map(m=>`<label><input type="radio" name="pMoneda" value="${m}" ${m===mon?'checked':''} onchange="pintarMoneda()"><span>${m} · ${MON_NOMBRE[m]}</span></label>`).join('')}</div></div>
+        <div class="fld"><label id="lblMonto">Monto total (con IVA)</label><div class="monto-wrap"><span id="monSimb" class="mon-simb">$</span><input id="pMonto" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="${v('monto')}"></div></div>
+        <div class="fld"><label>Forma de pago</label><select id="pForma">${FORMAS_PAGO.map(c=>`<option${r&&r[C.forma]===c?' selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="fld"><label>¿Para cuándo se debe pagar?</label><input id="pFecha" type="date" value="${r?esc(r[C.fReq]):addDias(hoyMX(),3)}"></div>
+        <div class="fld"><label>Urgencia</label><select id="pUrgencia"><option>Normal</option><option${r&&r[C.urg]==='Urgente'?' selected':''}>Urgente</option></select></div>
+        <div class="cap-full">${campoArchivo('pCotFile','Cotización (PDF o foto) · recomendada',r?r[C.cot]:'')}</div>
+        <div>${campoArchivo('pFactFile','Factura (PDF, XML o foto) · puede llegar después',r?r[C.liga]:'')}</div>
+        <div class="fld"><label>Folio de factura (si ya la tienes)</label><input id="pFactura" placeholder="Opcional" value="${v('factura')}"></div>
+        <div class="fld cap-full"><label>Notas para Dirección</label><textarea id="pNotas" rows="2" placeholder="Opcional">${v('notas')}</textarea></div>
+      </div>
+      <p class="sub" style="margin-bottom:12px">Los archivos se guardan solos en Drive → “Requisiciones y Solicitud de Pagos”.</p>
+      <button class="cap-btn" id="btnEnviar" onclick="enviarPago()">${r?'Guardar cambios':'Enviar solicitud'}</button>
+      ${r?'<button class="cap-btn sec" style="margin-left:8px" onclick="EDITANDO=null;renderNueva();switchView(\'mias\')">Cancelar</button>':''}
+      <div id="nuevaMsg"></div>
+    </div>`;
+  onProveedor();pintarMoneda();
+}
+function monedaSel(){const r=document.querySelector('input[name=pMoneda]:checked');return r?r.value:'MXN';}
+function pintarMoneda(){
+  const m=monedaSel(),l=document.getElementById('lblMonto');if(!l)return;
+  l.innerHTML=`Monto total en <b class="mon-${m}-txt">${MON_NOMBRE[m]} (${m})</b>, con IVA`;
+  document.getElementById('monSimb').textContent=MON_SIMB[m];
+  document.querySelector('.monto-wrap').className='monto-wrap mon-bd-'+m;
+}
+function provPorId(id){return id?PROVEEDORES_CACHE.find(p=>p[0]===id):null;}
+function provPorNombre(n){const k=norm(n);return k?PROVEEDORES_CACHE.find(p=>norm(p[1])===k||norm(p[3])===k):null;}
+function provSeleccionado(){return provPorId(PROV_SEL)||provPorNombre(val('pProveedor'));}
+function pagoTxt(p,completo){
+  if(p[7])return 'CLABE '+(completo?esc(p[7]):'••••'+esc(String(p[7]).slice(-4)))+(p[10]?' · '+esc(p[10]):'');
+  if(p[8])return 'Cuenta '+(completo?esc(p[8]):'registrada')+(p[10]?' · '+esc(p[10]):'');
+  return esc(p[11]||'')+(p[11]?' · ':'')+'<span class="sub">datos bancarios en Administración</span>';
+}
+// ——— Buscador de proveedores (nombre comercial, razón social, RFC o ID; sin acentos) ———
+function mostrarSug(){
+  const inp=document.getElementById('pProveedor'),box=document.getElementById('provSug');if(!inp||!box)return;
+  const t=norm(inp.value);
+  // Orden: empieza igual > alguna palabra empieza igual > contiene
+  const pts=p=>{const n=norm(p[1]),r=norm(p[3]);if(n.startsWith(t)||r.startsWith(t)||norm(p[0])===t||norm(p[6]).startsWith(t))return 0;
+    if((' '+n+' '+r).indexOf(' '+t)!==-1)return 1;return norm(p[1]+' '+p[3]+' '+p[6]).indexOf(t)!==-1?2:9;};
+  const lst=(t?PROVEEDORES_CACHE.map(p=>[pts(p),p]).filter(x=>x[0]<9).sort((x,y)=>x[0]-y[0]).map(x=>x[1]):PROVEEDORES_CACHE).slice(0,8);
+  const exacto=provSeleccionado();
+  box.innerHTML=lst.map((p,i)=>`<div class="ac-item${i===0?' on':''}" onmousedown="elegirProv(${jsq(p[0])})"><b>${esc(p[1])}</b><span class="sub"> · ${p[3]?esc(p[3])+' · ':''}${p[6]?esc(p[6]):'sin RFC'} · ${esc(p[0])}</span></div>`).join('')
+    +(exacto?'':`<div class="ac-item ac-new" onmousedown="modalProveedor()">+ ¿Es nuevo? Registrar ${t?'“'+esc(inp.value.trim())+'”':'proveedor'}</div>`)
+    +(!lst.length&&t?'<div class="ac-empty">No está en la lista de proveedores.</div>':'');
+  box.classList.toggle('hidden',!!exacto&&lst.length<=1);
+}
+function ocultarSug(){const b=document.getElementById('provSug');if(b)b.classList.add('hidden');}
+function elegirProv(id){const p=provPorId(id);if(!p)return;PROV_SEL=id;document.getElementById('pProveedor').value=p[1];ocultarSug();onProveedor(false,true);}
+function teclaSug(e){
+  const box=document.getElementById('provSug');if(!box||box.classList.contains('hidden'))return;
+  const it=[...box.querySelectorAll('.ac-item')];let i=it.findIndex(x=>x.classList.contains('on'));
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(i>=0)it[i].classList.remove('on');i=(i+(e.key==='ArrowDown'?1:-1)+it.length)%it.length;it[i].classList.add('on');}
+  else if(e.key==='Enter'&&i>=0){e.preventDefault();it[i].dispatchEvent(new MouseEvent('mousedown'));}
+  else if(e.key==='Escape')ocultarSug();
+}
+function onProveedor(desdeTeclado,recienElegido){
+  const inp=document.getElementById('pProveedor');if(!inp)return;
+  if(desdeTeclado)mostrarSug();
+  const box=document.getElementById('provInfo'),forma=document.getElementById('pForma');
+  const txt=inp.value.trim(),p=provSeleccionado();
+  if(p){
+    if(!PROV_SEL)PROV_SEL=p[0];
+    // Forma sugerida según la Matriz (se puede cambiar)
+    if(recienElegido){const f=String(p[11]).toUpperCase();forma.value=(p[7]||p[8]||/TRANSF/.test(f))?'Transferencia':(/EFEC/.test(f)?'Efectivo':forma.value);}
+    box.innerHTML=`<div class="prov-card">✓ <b>${esc(p[1])}</b> <span class="sub">${esc(p[0])}</span>${p[3]?`<div class="sub">${esc(p[3])}</div>`:''}<div class="sub">${p[6]?'RFC '+esc(p[6]):'Sin RFC'} · ${pagoTxt(p,false)}</div></div>`;
+  }else if(txt){
+    box.innerHTML=`<div class="sub" style="margin-top:6px">Elige un proveedor de la lista. ¿Es nuevo? <button class="linkbtn" onclick="modalProveedor()">+ Registrar proveedor nuevo</button></div>`;
+  }else box.innerHTML=`<div class="sub" style="margin-top:6px">¿No aparece? <button class="linkbtn" onclick="modalProveedor()">+ Registrar proveedor nuevo</button></div>`;
+}
+const val=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+async function enviarPago(){
+  const msg=document.getElementById('nuevaMsg'),btn=document.getElementById('btnEnviar');
+  const p=provSeleccionado();
+  if(!p){msg.innerHTML='<div class="errbox">Elige un proveedor de la lista (o regístralo si es nuevo).</div>';return;}
+  const monto=num(val('pMonto'));
+  if(!val('pConcepto')||monto<=0){msg.innerHTML='<div class="errbox">Concepto y monto son obligatorios.</div>';return;}
+  if(!SESSION.departamento&&!val('pDepto')){msg.innerHTML='<div class="errbox">Elige el departamento.</div>';return;}
+  if(!EDITANDO && !ventanaAbiertaMX() && !esDireccion() && !(CATS&&CATS.sinVentana)){msg.innerHTML='<div class="errbox">Fuera de horario: se reciben de sábado 00:00 a miércoles 12:00 pm.</div>';return;}
+  if(monedaSel()!=='MXN'&&!confirm('Esta solicitud es en '+MON_NOMBRE[monedaSel()]+' ('+monedaSel()+'): '+MON_SIMB[monedaSel()]+money(monto)+'. ¿Es correcto?'))return;
+  btn.disabled=true;
+  try{
+    const archivos=await leerArchivos([['pCotFile','cotizacion'],['pFactFile','factura']]);
+    const body={proveedorId:p[0],proveedor:p[1],concepto:val('pConcepto'),monto,moneda:monedaSel(),formaPago:val('pForma'),
+      categoria:val('pCategoria'),departamento:deptoActual(),fechaRequerida:val('pFecha'),urgencia:val('pUrgencia'),
+      factura:val('pFactura'),notas:val('pNotas'),archivos};
+    msg.innerHTML='<div class="okmsg">Enviando'+(archivos.length?' y subiendo '+archivos.length+' archivo(s)':'')+'…</div>';
+    const j=EDITANDO?await api('pagos_editar',Object.assign({idPago:EDITANDO[C.id]},body)):await api('pagos_crear',body);
+    if(!j.ok){msg.innerHTML=`<div class="errbox">${esc(j.error)}</div>`;btn.disabled=false;return;}
+    const fueEdit=!!EDITANDO;EDITANDO=null;renderNueva();
+    document.getElementById('nuevaMsg').innerHTML=`<div class="okmsg">${fueEdit?'Cambios guardados.':'Solicitud '+esc(j.id||'')+' enviada a Dirección.'} La ves en “Mis solicitudes”.</div>`+
+      ((j.avisos&&j.avisos.length)?`<div class="banner warn">${esc(j.avisos.join(' · '))} — agrégalo después desde “Mis solicitudes”.</div>`:'');
+    cargarPagos();
+  }catch(e){msg.innerHTML=`<div class="errbox">${esc(e.message||'No se pudo enviar. Revisa tu conexión.')}</div>`;btn.disabled=false;}
+}
+function applyPrefillFromURL(){
+  const p=new URLSearchParams(location.search);
+  if(p.get('prefill')!=='1')return;
+  switchView('nueva');
+  const set=(id,v)=>{if(v!=null && document.getElementById(id))document.getElementById(id).value=v;};
+  set('pProveedor',p.get('proveedor'));set('pConcepto',p.get('concepto'));set('pMonto',p.get('monto'));set('pNotas',p.get('notas'));
+  if(p.get('categoria'))set('pCategoria',p.get('categoria'));
+  onProveedor();
+}
+
+// ————— Mis solicitudes —————
+function renderMias(){
+  const el=document.getElementById('miasBody');
+  const mias=PAGOS.filter(r=>String(r[C.solId])===String(SESSION.id));
+  if(!mias.length){el.innerHTML='<div class="empty">Aún no has enviado solicitudes de pago.</div>';return;}
+  const pend=mias.filter(r=>r[C.est]==='Pendiente'),aut=mias.filter(r=>r[C.est]==='Autorizado');
+  el.innerHTML=`<div class="kpis">${kpi('En revisión de Dirección',sumaTxt(pend),pend.length+' solicitud(es)')}${kpi('Autorizado, por pagar',sumaTxt(aut),aut.length+' solicitud(es)')}</div>
+  <div style="overflow-x:auto"><table class="aud"><thead><tr><th>ID · fecha</th><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Estatus</th><th>Docs</th><th></th></tr></thead><tbody>
+  ${mias.map(r=>{
+    const e=r[C.est],vivo=e!=='Rechazado'&&e!=='Cancelado';
+    return `<tr><td>${esc(r[C.id])}<div class="sub">${esc(r[C.fSol])}</div></td><td>${esc(r[C.prov])}</td><td>${esc(r[C.concepto])}</td><td class="num">${fmtR(r)}</td>
+    <td>${pill(e)}${e==='Rechazado'&&r[C.motivo]?`<div class="sub">${esc(r[C.motivo])}</div>`:''}${e==='Pagado'?`<div class="sub">${esc(r[C.fPago])}</div>`:''}</td>
+    <td>${docs(r)}</td>
+    <td><div class="row-actions">${e==='Pendiente'?`<button class="mini-btn info" onclick="editar('${esc(r[C.id])}')">Editar</button><button class="mini-btn ghost" onclick="cancelar('${esc(r[C.id])}')">Cancelar</button>`:''}${vivo&&!r[C.factura]&&!r[C.liga]?`<button class="mini-btn ghost" onclick="modalFactura('${esc(r[C.id])}')">+ Factura</button>`:''}</div></td></tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+function editar(id){EDITANDO=PAGOS.find(r=>r[C.id]===id);renderNueva();switchView('nueva');window.scrollTo(0,0);}
+async function cancelar(id){
+  if(!confirm('¿Cancelar la solicitud '+id+'?'))return;
+  const j=await api('pagos_cancelar',{idPago:id}).catch(()=>({ok:false,error:'No se pudo procesar.'}));
+  if(!j.ok){alert(j.error);return;}
+  cargarPagos();
+}
+
+// ————— Historial —————
+function filtrarHistorial(){
+  const d=val('hDesde'),h=val('hHasta'),e=val('hEstatus'),dep=val('hDepto'),t=norm(val('hTexto'));
+  return PAGOS.filter(r=>{const f=String(r[C.fSol]).slice(0,10);
+    return (!d||f>=d)&&(!h||f<=h)&&(!e||r[C.est]===e)&&(!dep||r[C.depto]===dep)&&(!t||norm(r[C.prov]+' '+r[C.concepto]).indexOf(t)!==-1);});
+}
+function renderHistorial(){
+  const el=document.getElementById('historialBody'),filas=filtrarHistorial();
+  const vivos=filas.filter(r=>r[C.est]!=='Rechazado'&&r[C.est]!=='Cancelado');
+  const porCat={};vivos.filter(r=>monDe(r)==='MXN').forEach(r=>{porCat[r[C.cat]]=(porCat[r[C.cat]]||0)+num(r[C.monto]);});
+  let top='–',tv=0;Object.keys(porCat).forEach(c=>{if(porCat[c]>tv){tv=porCat[c];top=c;}});
+  const pag=filas.filter(r=>r[C.est]==='Pagado');
+  document.getElementById('historialKpis').innerHTML=`<div class="kpis">${kpi('Pagado en el rango',sumaTxt(pag),pag.length+' pago(s)')}${kpi('Solicitado (sin rechazos)',sumaTxt(vivos))}${kpi('Categoría top (MXN)','<span style="font-size:15px">'+esc(top)+'</span>','$'+money(tv))}</div>`;
+  if(!filas.length){el.innerHTML='<div class="empty">Sin resultados para ese filtro.</div>';return;}
+  el.innerHTML=`<div style="overflow-x:auto"><table class="aud" id="histTable"><thead><tr>
+    <th>ID</th><th>Fecha</th><th>Depto</th><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Forma</th><th>Estatus</th><th>Autorizó</th><th>Pago</th><th class="no-pdf">Docs</th>
+  </tr></thead><tbody>${filas.map(r=>`<tr><td>${esc(r[C.id])}</td><td>${esc(r[C.fSol])}</td><td>${esc(r[C.depto])}</td><td>${esc(r[C.prov])}</td><td>${esc(r[C.concepto])}</td>
+    <td class="num">${fmtR(r)}</td><td>${esc(r[C.forma])}</td><td>${pill(r[C.est])}${r[C.est]==='Rechazado'&&r[C.motivo]?`<div class="sub">${esc(r[C.motivo])}</div>`:''}</td>
+    <td>${esc(r[C.autPor]||'–')}</td><td>${r[C.fPago]?esc(r[C.fPago])+(r[C.ref]?' · '+esc(r[C.ref]):''):'–'}</td><td class="no-pdf">${docs(r)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function pdfHistorial(){
+  const el=document.getElementById('historialBody');
+  if(!document.getElementById('histTable')){alert('No hay datos para ese filtro.');return;}
+  const clon=el.cloneNode(true);clon.querySelectorAll('.no-pdf').forEach(n=>n.remove());
+  const w=window.open('','_blank','width=1000,height=650');
+  if(!w){alert('Permite las ventanas emergentes para descargar el PDF.');return;}
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Pagos Casa Yuma</title>'+
+    '<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">'+
+    '<style>body{font-family:"Spline Sans Mono",monospace;background:#F5F1E6;padding:24px;color:#20302f}h1{font-family:"Fraunces",serif;font-size:20px;color:#88285C}.pdf-head{display:flex;gap:12px;border-bottom:2px solid #88285C;padding-bottom:12px;margin-bottom:18px}.pdf-head .date{margin-left:auto;font-size:12px;color:#72785E}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#72785E;color:#F5F1E6;text-align:left;padding:7px}td{padding:6px 7px;border-bottom:1px solid #d8cfb8}.num{text-align:right}.sub{font-size:10px;color:#72785E}.pill{font-weight:600;text-transform:uppercase;font-size:10px}@media print{@page{size:A4 landscape;margin:12mm}}</style>'+
+    '</head><body><div class="pdf-head"><h1>Casa Yuma</h1><span>Pagos a Proveedores</span><span class="date">'+esc(val('hDesde'))+' – '+esc(val('hHasta'))+'</span></div>'+
+    document.getElementById('historialKpis').innerHTML.replace(/class="kpis"/,'style="display:flex;gap:24px;margin-bottom:14px;font-size:12px"')+clon.innerHTML+'</body></html>');
+  w.document.close();setTimeout(function(){w.focus();w.print();},600);
+}
+function csvHistorial(){
+  const filas=filtrarHistorial();if(!filas.length){alert('No hay datos para ese filtro.');return;}
+  const head=['ID','FechaSolicitud','Departamento','Solicitó','Proveedor','RFC','Categoría','Concepto','Monto','Moneda','Forma','CLABE','Banco','FechaRequerida','Urgencia','Estatus','Autorizó','FechaAutorización','Motivo','FechaPago','Referencia','Factura','LigaFactura','Cotización','Comprobante','PagadoPor'];
+  const k=['id','fSol','depto','solNom','prov','rfc','cat','concepto','monto','mon','forma','clabe','banco','fReq','urg','est','autPor','fAut','motivo','fPago','ref','factura','liga','cot','comp','pagPor'];
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv='﻿'+[head.map(q).join(',')].concat(filas.map(r=>k.map(x=>x==='clabe'&&r[C.clabe]?q('\t'+r[C.clabe]):q(r[C[x]])).join(','))).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='pagos_'+val('hDesde')+'_'+val('hHasta')+'.csv';a.click();
+}
+
+// ————— Proveedores (= "Property Vendor List" de la Matriz) —————
+let CATS=null;
+let ERR_MATRIZ='';
+async function cargarCats(){
+  try{const j=await apiGet({accion:'pagos_categorias_list',id:SESSION.id,pin:SESSION.pin});if(j.ok){CATS=j;if(j.aviso)ERR_MATRIZ=j.aviso;}else ERR_MATRIZ=j.error||'';}
+  catch(e){ERR_MATRIZ='Sin conexión con el servidor.';}
+  if(!CATS)CATS={porDepto:{},general:['OTROS'],deptos:[]};
+}
+// Avisa si el servidor (Apps Script) publicado no es la versión que esta página espera.
+const VERSION_ESPERADA='pagos-v3.2';
+async function revisarVersion(){
+  let v='';try{const j=await apiGet({accion:'version'});v=j&&j.version||'';}catch(e){}
+  if(v===VERSION_ESPERADA&&!ERR_MATRIZ)return;
+  const txt=v!==VERSION_ESPERADA
+    ? 'El servidor (Apps Script) tiene una versión anterior'+(v?' ('+esc(v)+')':'')+'. Implementar → Administrar implementaciones → ✏️ → Nueva versión.'
+    : 'Problema al leer proveedores/categorías: '+esc(ERR_MATRIZ)+' — en Apps Script corre “diagnosticoPagos” y acepta permisos.';
+  document.querySelector('main').insertAdjacentHTML('afterbegin',`<div class="errbox">⚠ ${veTodo()?txt:'Hay un problema con el sistema de pagos. Avisa a Administración.'}</div>`);
+}
+async function cargarProveedores(){
+  try{
+    const j=await apiGet({accion:'proveedores_list',id:SESSION.id,pin:SESSION.pin});
+    if(!j.ok)throw new Error(j.error);
+    PROVEEDORES_CACHE=j.filas||[];
+    if(!j.fuente)ERR_MATRIZ=ERR_MATRIZ||'el servidor devolvió la lista vieja (no la Matriz).';
+  }catch(e){ERR_MATRIZ=e.message||'error';document.getElementById('proveedoresBody').innerHTML=`<div class="errbox">${esc(e.message)}</div>`;return;}
+  onProveedor();
+  renderProveedores();
+}
+function renderProveedores(){
+  document.getElementById('proveedoresBody').innerHTML=`
+    <div class="ctl"><input id="provBuscar" placeholder="Buscar nombre, razón social, RFC…" oninput="renderProvTabla()" style="width:260px"><button class="cap-btn" onclick="modalProveedor()">+ Proveedor nuevo</button></div>
+    <p class="sub" style="margin:-10px 0 14px">Proveedores de la pestaña Matriz + los registrados desde Pagos. Registra solo proveedores que no aparezcan aquí.</p>
+    <div id="provTabla"></div>`;
+  renderProvTabla();
+}
+function renderProvTabla(){
+  const t=norm(val('provBuscar')),ed=editaProveedores();
+  const todos=PROVEEDORES_CACHE.filter(p=>!t||norm(p[1]+' '+p[3]+' '+p[2]+' '+p[6]+' '+p[0]).indexOf(t)!==-1);
+  const lst=todos.slice(0,150);
+  document.getElementById('provTabla').innerHTML=`<div class="section-eyebrow">Proveedores (${todos.length}${todos.length>lst.length?' · mostrando 150, usa el buscador':''})</div><div style="overflow-x:auto"><table class="aud"><thead><tr><th>Proveedor</th><th>Giro</th><th>RFC</th><th>Pago</th><th>Teléfono</th>${ed?'<th></th>':''}</tr></thead><tbody>
+    ${lst.map(p=>`<tr><td><b>${esc(p[1])}</b><div class="sub">${p[3]?esc(p[3])+' · ':''}${esc(p[12]||'')}</div></td><td>${esc(p[2])}</td><td>${esc(p[6]||'—')}</td>
+      <td>${pagoTxt(p,ed)}</td><td>${esc(p[4])}</td>
+      ${ed?`<td><button class="mini-btn ghost" onclick="modalProveedor(${jsq(p[0])})">Editar</button></td>`:''}</tr>`).join('')||'<tr><td colspan="6" class="empty">Sin resultados.</td></tr>'}
+  </tbody></table></div>`;
+}
+// Alta de proveedor NUEVO (cualquier líder) o corrección de datos (Administración/Dirección).
+function modalProveedor(idEditar){
+  const p=idEditar?provPorId(idEditar):null;
+  const nombre=p?p[1]:(val('pProveedor')||'');
+  const forma=p?(p[7]?'Transferencia':(p[8]?'Internacional':'Efectivo')):'Transferencia';
+  const radio=(v,t)=>`<label><input type="radio" name="vForma" value="${v}" ${forma===v?'checked':''} onchange="toggleClabe()"><span>${t}</span></label>`;
+  abrirModal(`<h2>${p?'Editar '+esc(p[0]):'Proveedor nuevo'}</h2>
+    ${p?'':'<p class="sub" style="margin-bottom:12px">Antes de registrar, búscalo en la lista: si ya está, no hace falta capturar sus datos bancarios.</p>'}
+    <div class="fld"><label>Nombre comercial</label><input id="vNombre" value="${esc(nombre)}" ${p?'disabled':''} style="text-transform:uppercase"></div>
+    ${p?'':`<div class="fld"><label>Razón social (como aparece en la factura)</label><input id="vRazon" style="text-transform:uppercase" placeholder="Opcional"></div>
+    <div class="fld"><label>Giro / qué vende o qué servicio da</label><input id="vDesc" placeholder="Ej. Jardinería, Refrigeración" style="text-transform:uppercase"></div>`}
+    <div class="fld"><label>RFC</label><input id="vRfc" value="${esc(p?p[6]:'')}" placeholder="Déjalo vacío si no tiene" style="text-transform:uppercase"></div>
+    <div class="fld"><label>¿Cómo se le paga?</label><div class="seg">${radio('Transferencia','Transferencia')}${radio('Efectivo','Solo efectivo')}${radio('Internacional','Extranjero')}</div></div>
+    <div id="vClabeWrap">
+      <div class="fld"><label>CLABE (18 dígitos) o tarjeta de débito (16)</label><input id="vClabe" inputmode="numeric" maxlength="24" value="${esc(p?p[7]:'')}"></div>
+    </div>
+    <div id="vIntlWrap" class="hidden">
+      <div class="fld"><label>Cuenta / IBAN y SWIFT-BIC</label><textarea id="vCuenta" rows="2" placeholder="IBAN FR76… · BIC QNTOFRP1XXX">${esc(p?p[8]:'')}</textarea></div>
+    </div>
+    <div id="vBancoWrap" class="fld"><label>Banco</label><input id="vBanco" value="${esc(p?p[10]:'')}"></div>
+    <div class="fld"><label>Teléfono</label><input id="vTelefono" value="${esc(p?p[4]:'')}" inputmode="tel"></div>
+    <div class="fld"><label>Correo</label><input id="vEmail" type="email" value="${esc(p?p[5]:'')}" placeholder="Opcional"></div>
+    <div id="mMsg"></div><div class="acts"><button class="mini-btn ghost" onclick="cerrarModal()">Cancelar</button><button class="cap-btn" onclick="guardarProveedor(${p?`${jsq(p[0])}`:''})">Guardar</button></div>`);
+  toggleClabe();
+}
+function toggleClabe(){
+  const f=document.querySelector('input[name=vForma]:checked').value;
+  document.getElementById('vClabeWrap').classList.toggle('hidden',f!=='Transferencia');
+  document.getElementById('vIntlWrap').classList.toggle('hidden',f!=='Internacional');
+  document.getElementById('vBancoWrap').classList.toggle('hidden',f==='Efectivo');
+}
+async function guardarProveedor(idEditar){
+  const forma=document.querySelector('input[name=vForma]:checked').value;
+  const clabe=val('vClabe').replace(/\D/g,'');
+  const rfc=val('vRfc').toUpperCase().replace(/[\s\-\.]/g,'');
+  if(!val('vNombre')){modalErr('El nombre es obligatorio.');return;}
+  if(forma==='Transferencia'&&clabe.length!==18&&clabe.length!==16){modalErr('Escribe una CLABE de 18 dígitos o una tarjeta de 16 (llevas '+clabe.length+'). Si se le paga en efectivo, marca “Solo efectivo”.');return;}
+  if(forma==='Internacional'&&val('vCuenta').length<8){modalErr('Escribe la cuenta o IBAN y el SWIFT/BIC.');return;}
+  if(rfc&&!/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc)){modalErr('El RFC debe tener 12 o 13 caracteres (ej. MARF800711BA5). Si no tiene, déjalo vacío.');return;}
+  const body={nombre:val('vNombre'),razonSocial:val('vRazon'),descripcion:val('vDesc'),rfc,formaPagoProv:forma,clabe,cuenta:val('vCuenta'),
+    banco:val('vBanco'),telefono:val('vTelefono'),email:val('vEmail')};
+  if(idEditar)body.proveedorId=idEditar;
+  modalErr('');document.getElementById('mMsg').innerHTML='<div class="okmsg">Guardando en la Matriz…</div>';
+  const j=await api(idEditar?'proveedores_actualizar':'proveedores_crear',body).catch(()=>({ok:false,error:'No se pudo guardar.'}));
+  if(!j.ok){
+    modalErr(j.error);
+    // Si ya existía, ofrecer usarlo directo
+    if(j.id&&!idEditar&&provPorId(j.id))document.getElementById('mMsg').insertAdjacentHTML('beforeend',`<button class="cap-btn sec" style="margin-top:8px" onclick="cerrarModal();switchView('nueva');elegirProv(${jsq(j.id)})">Usar ${esc(j.id)}</button>`);
+    return;
+  }
+  cerrarModal();
+  await cargarProveedores();
+  if(!idEditar&&document.getElementById('pProveedor')){
+    // Dejar claro que registrar el proveedor NO es enviar la solicitud
+    switchView('nueva');elegirProv(j.id);
+    document.getElementById('nuevaMsg').innerHTML='';
+    document.getElementById('provInfo').insertAdjacentHTML('beforeend','<div class="banner warn" style="margin:8px 0 0">Proveedor '+esc(j.id)+' registrado en la Matriz ✓ — <b>falta enviar la solicitud</b>: llena concepto y monto y presiona “Enviar solicitud”.</div>');
+    document.getElementById('pConcepto').focus();
+  }
+}
+
+// ————— Modal —————
+function abrirModal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').classList.add('open');}
+function cerrarModal(){document.getElementById('modal').classList.remove('open');}
+function modalErr(t){const m=document.getElementById('mMsg');if(m)m.innerHTML=t?`<div class="errbox">${esc(t)}</div>`:'';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrarModal();});
+</script>
+</body>
+</html>
